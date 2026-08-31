@@ -8,7 +8,7 @@
   <title>DEC Entregas & Gestão de Clientes</title>
   
   <!-- Fontes Google & FontAwesome -->
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
@@ -723,8 +723,9 @@
       background: #0f172a;
       display: flex;
       align-items: center;
-      justify-content: flex-end;
+      justify-content: space-between;
       gap: 0.6rem;
+      flex-wrap: wrap;
     }
 
     /* Formulários */
@@ -1252,7 +1253,7 @@
   </div>
 
   <!-- ==========================================================================
-       MODAL 4: GESTÃO DE CLIENTES (CRM & BUSCA CNPJ AUTOMÁTICA)
+       MODAL 4: GESTÃO DE CLIENTES (CRM, BUSCA CNPJ & BACKUP)
        ========================================================================== -->
   <div class="modal-overlay" id="clients-modal">
     <div class="modal-card modal-lg">
@@ -1269,9 +1270,18 @@
             <input type="search" id="search-clients-input" placeholder="Buscar por Nome, Código, CNPJ ou Cidade..." oninput="ClientApp.handleSearch(this.value)">
           </div>
 
-          <button class="btn btn-purple" onclick="ClientApp.openForm()">
-            <i class="fa-solid fa-user-plus"></i> Novo Cliente
-          </button>
+          <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            <button class="btn btn-secondary" onclick="ClientApp.exportBackup()" title="Exportar backup dos clientes cadastrados para arquivo JSON">
+              <i class="fa-solid fa-file-export"></i> Exportar Backup
+            </button>
+            <label class="btn btn-secondary" style="cursor: pointer; margin-bottom: 0;" title="Importar arquivo de backup de clientes">
+              <i class="fa-solid fa-file-import"></i> Importar Backup
+              <input type="file" accept=".json" style="display: none;" onchange="ClientApp.importBackup(event)">
+            </label>
+            <button class="btn btn-purple" onclick="ClientApp.openForm()">
+              <i class="fa-solid fa-user-plus"></i> Novo Cliente
+            </button>
+          </div>
         </div>
 
         <!-- Formulário de Cadastro/Edição de Cliente -->
@@ -1379,6 +1389,9 @@
       </div>
 
       <div class="modal-footer">
+        <div style="font-size: 0.75rem; color: var(--text-dim);">
+          💾 Use <b>Exportar Backup</b> para levar seus clientes para o celular ou outro computador facilmente.
+        </div>
         <button type="button" class="btn btn-secondary" onclick="ModalEngine.close('clients-modal')">Fechar</button>
       </div>
     </div>
@@ -1419,6 +1432,7 @@
       </div>
 
       <div class="modal-footer">
+        <div></div>
         <button type="button" class="btn btn-secondary" onclick="ModalEngine.close('client-orders-history-modal')">Fechar</button>
       </div>
     </div>
@@ -1466,6 +1480,7 @@
       </div>
 
       <div class="modal-footer">
+        <div></div>
         <button type="button" class="btn btn-secondary" onclick="ModalEngine.close('archived-orders-modal')">Fechar</button>
       </div>
     </div>
@@ -1501,8 +1516,11 @@
       </div>
 
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="ModalEngine.close('firebase-modal')">Cancelar</button>
-        <button type="button" class="btn btn-primary" onclick="FirebaseEngine.saveFromForm()"><i class="fa-solid fa-floppy-disk"></i> Salvar e Conectar</button>
+        <div></div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button type="button" class="btn btn-secondary" onclick="ModalEngine.close('firebase-modal')">Cancelar</button>
+          <button type="button" class="btn btn-primary" onclick="FirebaseEngine.saveFromForm()"><i class="fa-solid fa-floppy-disk"></i> Salvar e Conectar</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1707,7 +1725,7 @@
     };
 
     /* --------------------------------------------------------------------------
-       SISTEMA DE CLIENTES (CRM & BUSCA CNPJ AUTOMÁTICA COM BRASILAPI)
+       SISTEMA DE CLIENTES (CRM, BUSCA CNPJ AUTOMÁTICA & IMPORT/EXPORT BACKUP)
        -------------------------------------------------------------------------- */
     const ClientApp = {
       clients: [],
@@ -1734,6 +1752,72 @@
         if (badge) {
           badge.textContent = Array.isArray(this.clients) ? this.clients.length : 0;
         }
+      },
+
+      /* Exporta lista de clientes para arquivo .json para transferir ao celular ou fazer backup */
+      exportBackup() {
+        if (!this.clients || this.clients.length === 0) {
+          showToast('Nenhum cliente para exportar!', 'warning');
+          return;
+        }
+        const jsonStr = JSON.stringify(this.clients, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `backup-clientes-dec-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast(`Backup de ${this.clients.length} clientes exportado com sucesso!`);
+      },
+
+      /* Importa lista de clientes de um arquivo .json */
+      importBackup(event) {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const importedList = JSON.parse(e.target.result);
+            if (!Array.isArray(importedList)) throw new Error('Formato inválido');
+
+            HistoryStore.snapshot();
+            let addedCount = 0;
+            let updatedCount = 0;
+
+            importedList.forEach(imp => {
+              if (!imp.id) imp.id = String(Date.now() + Math.floor(Math.random() * 10000));
+              const existingIdx = this.clients.findIndex(c => 
+                String(c.id) === String(imp.id) || 
+                (c.code && imp.code && String(c.code) === String(imp.code)) ||
+                (c.cnpj && imp.cnpj && c.cnpj.replace(/\D/g,'') === imp.cnpj.replace(/\D/g,''))
+              );
+
+              if (existingIdx >= 0) {
+                this.clients[existingIdx] = { ...this.clients[existingIdx], ...imp };
+                updatedCount++;
+              } else {
+                this.clients.unshift(imp);
+                addedCount++;
+              }
+              FirebaseEngine.syncClient(imp);
+            });
+
+            this.saveLocally();
+            this.render();
+            OrderApp.render();
+            showToast(`Importação concluída: ${addedCount} novos clientes e ${updatedCount} atualizados!`, 'success');
+          } catch (err) {
+            console.error('Erro na importação:', err);
+            showToast('Erro ao ler o arquivo de backup. Verifique o formato JSON!', 'error');
+          } finally {
+            event.target.value = '';
+          }
+        };
+        reader.readAsText(file);
       },
 
       getById(id) {
@@ -1937,7 +2021,7 @@
         }
 
         if (list.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">Nenhum cliente cadastrado.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">Nenhum cliente cadastrado. Use o botão "+ Novo Cliente" ou "Importar Backup".</td></tr>`;
           return;
         }
 
