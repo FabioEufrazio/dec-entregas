@@ -915,6 +915,7 @@
     </div>
   </div>
 
+
   <!-- HEADER PRINCIPAL -->
   <header>
     <div class="header-container">
@@ -923,7 +924,7 @@
           <i class="fa-solid fa-truck-fast"></i>
         </div>
         <div class="brand-text">
-          <h1 id="app-title-text">DEC Entregas [HOMOLOG] <span style="font-size: 0.65rem; background: rgba(245, 158, 11, 0.2); color: #f59e0b; padding: 2px 6px; border-radius: 4px;">TESTES</span></h1>
+          <h1 id="app-title-text">DEC Entregas [HOMOLOG] Logística</h1>
           <div style="display: flex; align-items: center; gap: 0.6rem;">
             <span>Painel de Monitoramento Logístico & CRM</span>
             <span style="color: var(--border-light);">|</span>
@@ -1194,11 +1195,8 @@
         </div>
 
         <div class="modal-footer">
-          <div></div>
-          <div style="display: flex; gap: 0.5rem;">
-            <button type="button" class="btn btn-secondary" onclick="ModalEngine.close('order-modal')">Cancelar</button>
-            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Salvar Pedido</button>
-          </div>
+          <button type="button" class="btn btn-secondary" onclick="ModalEngine.close('order-modal')">Cancelar</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Salvar Pedido</button>
         </div>
       </form>
     </div>
@@ -1229,7 +1227,6 @@
       </div>
 
       <div class="modal-footer">
-        <div></div>
         <button type="button" class="btn btn-secondary" onclick="ModalEngine.close('timeline-modal')">Fechar</button>
       </div>
     </div>
@@ -1742,7 +1739,7 @@
     };
 
     /* --------------------------------------------------------------------------
-       SISTEMA DE CLIENTES (CRM, BUSCA CNPJ & IMPORT/EXPORT BACKUP)
+       SISTEMA DE CLIENTES (CRM, BUSCA CNPJ AUTOMÁTICA & IMPORT/EXPORT BACKUP)
        -------------------------------------------------------------------------- */
     const ClientApp = {
       clients: [],
@@ -2911,7 +2908,7 @@
 
     /* --------------------------------------------------------------------------
        GERADOR DE RELATÓRIO EM PDF PROFISSIONAL COM DATA DE INÍCIO & SLA
-       Ordem: # > Cliente > Nº Pedidos (Filiais) > Transportadora > Data Início > Valor Total > Status > Tempo SLA
+       Paginação Inteligente (Zero Corte de Linhas) + Layout A4 Landscape Perfeito
        -------------------------------------------------------------------------- */
     const PDFEngine = {
       exportOpenOrders() {
@@ -2924,7 +2921,13 @@
         showToast('Gerando relatório PDF...', 'info');
 
         const totalVal = activeList.reduce((sum, o) => sum + (Number(o.totalValue) || 0), 0);
-        const dateNowStr = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const dateNowStr = new Date().toLocaleDateString('pt-BR', { 
+          day: '2-digit', 
+          month: '2-digit', 
+          year: 'numeric', 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
 
         // Cores de SLA estilizadas e nítidas para documento PDF
         const slaPdfStyles = {
@@ -2934,7 +2937,8 @@
           red: 'background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5;'
         };
 
-        const rowsHtml = activeList.map((o, idx) => {
+        // Renderizador de uma linha da tabela
+        const renderRow = (o, globalIdx) => {
           const client = ClientApp.getById(o.clientId);
           const clientCode = o.clientCode || client?.code || '';
           const clientName = o.clientName || client?.nomeFantasia || client?.razaoSocial || '';
@@ -2942,17 +2946,13 @@
           const sla = OrderApp.getSlaInfo(o.createdAt);
           const durationStr = formatDuration(Date.now() - new Date(o.createdAt).getTime());
           
-          // Nome do Status sem o número inicial no PDF
           const st = STATUS_MAP[o.currentStatus] || { name: o.currentStatus, cleanName: o.currentStatus };
           const statusPdfName = st.cleanName || (st.name || '').replace(/^\d+\.\s*/, '');
-
           const slaStyle = slaPdfStyles[sla.key] || slaPdfStyles.green;
           
-          // Transportadora (se não informada, traço limpo)
           const carrierText = (o.carrier || '').trim();
           const hasCarrier = carrierText && carrierText.toLowerCase() !== 'transportadora' && carrierText.toLowerCase() !== 'padrão';
 
-          // Renderiza cada filial em linha compacta
           const branchRows = (o.branchOrders || []).map(b => `
             <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0; padding: 1px 4px; border-radius: 3px; margin-bottom: 2px;">
               <span style="font-family: monospace; font-weight: 700; color: #0284c7; font-size: 7.5pt;">${escapeHtml(formatOrderNumber(b.number || b))}</span>
@@ -2961,11 +2961,11 @@
           `).join('');
 
           return `
-            <tr style="border-bottom: 1px solid #e2e8f0; font-size: 8pt; page-break-inside: avoid !important; break-inside: avoid !important;">
-              <td style="padding: 4px 3px; font-weight: bold; text-align: center; color: #64748b; vertical-align: middle;">${idx + 1}</td>
+            <tr style="border-bottom: 1px solid #e2e8f0; font-size: 8pt;">
+              <td style="padding: 5px 3px; font-weight: bold; text-align: center; color: #64748b; vertical-align: middle;">${globalIdx + 1}</td>
               
               <!-- Cliente com Código e Razão Social -->
-              <td style="padding: 4px 6px; vertical-align: middle;">
+              <td style="padding: 5px 6px; vertical-align: middle;">
                 <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 4px;">
                   ${clientCode ? `<span style="background: #0284c7; color: #ffffff; padding: 1px 4px; border-radius: 3px; font-size: 7pt; font-weight: 800;">${escapeHtml(clientCode)}</span>` : ''}
                   <b style="font-size: 8.2pt; color: #0f172a;">${escapeHtml(clientName)}</b>
@@ -2978,14 +2978,14 @@
               </td>
 
               <!-- Nº Pedidos & Valores das Filiais -->
-              <td style="padding: 4px 6px; vertical-align: middle;">
+              <td style="padding: 5px 6px; vertical-align: middle;">
                 <div style="display: flex; flex-direction: column; gap: 1px;">
                   ${branchRows || '<span style="color:#94a3b8;">-</span>'}
                 </div>
               </td>
 
               <!-- Transportadora -->
-              <td style="padding: 4px 6px; vertical-align: middle;">
+              <td style="padding: 5px 6px; vertical-align: middle;">
                 ${hasCarrier ? `
                   <span style="background: #fff7ed; border: 1px solid #fdba74; color: #ea580c; padding: 1px 5px; border-radius: 3px; font-weight: 700; font-size: 7.2pt; display: inline-block;">
                     ${escapeHtml(carrierText)}
@@ -2994,85 +2994,178 @@
               </td>
 
               <!-- Data Início (Sem hora) -->
-              <td style="padding: 4px 4px; font-size: 7.5pt; color: #475569; font-weight: 600; text-align: center; white-space: nowrap; vertical-align: middle;">
+              <td style="padding: 5px 4px; font-size: 7.5pt; color: #475569; font-weight: 600; text-align: center; white-space: nowrap; vertical-align: middle;">
                 ${formatDate(o.createdAt, false)}
               </td>
 
               <!-- Valor Total -->
-              <td style="padding: 4px 6px; text-align: right; font-weight: 800; color: #059669; font-size: 8.2pt; vertical-align: middle; white-space: nowrap;">
+              <td style="padding: 5px 6px; text-align: right; font-weight: 800; color: #059669; font-size: 8.2pt; vertical-align: middle; white-space: nowrap;">
                 ${formatCurrency(o.totalValue)}
               </td>
 
               <!-- Status Atual -->
-              <td style="padding: 4px 6px; font-weight: 700; color: #334155; font-size: 7.5pt; vertical-align: middle;">
+              <td style="padding: 5px 6px; font-weight: 700; color: #334155; font-size: 7.5pt; vertical-align: middle;">
                 ${statusPdfName}
               </td>
 
               <!-- Tempo SLA -->
-              <td style="padding: 4px 6px; text-align: right; white-space: nowrap; vertical-align: middle;">
+              <td style="padding: 5px 6px; text-align: right; white-space: nowrap; vertical-align: middle;">
                 <span style="${slaStyle} padding: 1px 5px; border-radius: 10px; font-weight: 800; font-size: 7.2pt; display: inline-block;">
                   ● ${durationStr}
                 </span>
               </td>
             </tr>
           `;
-        }).join('');
-
-        const element = document.createElement('div');
-        element.style = 'padding: 10px 14px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #111827; background: #ffffff; width: 100%; box-sizing: border-box;';
-        element.innerHTML = `
-          <style>
-            table { width: 100%; border-collapse: collapse; }
-            tr { page-break-inside: avoid !important; break-inside: avoid !important; }
-            thead { display: table-header-group; }
-            .avoid-break { page-break-inside: avoid !important; break-inside: avoid !important; }
-          </style>
-          
-          <div class="avoid-break" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0284c7; padding-bottom: 6px; margin-bottom: 8px;">
-            <div>
-              <h1 style="font-size: 13pt; margin: 0; color: #0f172a; font-weight: 800; letter-spacing: -0.3px;">DEC Bebidas - Relatório de Entregas em Aberto</h1>
-              <p style="margin: 2px 0 0; font-size: 7.5pt; color: #64748b;">Monitoramento de Ciclo Logístico, Clientes & Transportadoras</p>
-            </div>
-            <div style="text-align: right; font-size: 7.5pt; color: #64748b;">
-              <b>Gerado em:</b> ${dateNowStr}<br>
-              <b>Total de Pedidos:</b> ${activeList.length} | <b>Volume:</b> <span style="color: #059669; font-weight: bold;">${formatCurrency(totalVal)}</span>
-            </div>
-          </div>
-
-          <table>
-            <thead>
-              <tr style="background: #f1f5f9; border-bottom: 2px solid #cbd5e1; font-size: 7.2pt; text-transform: uppercase; color: #475569;">
-                <th style="padding: 5px 3px; text-align: center; width: 3%;">#</th>
-                <th style="padding: 5px 6px; text-align: left; width: 24%;">Cliente</th>
-                <th style="padding: 5px 6px; text-align: left; width: 20%;">Nº Pedidos (Filiais)</th>
-                <th style="padding: 5px 6px; text-align: left; width: 13%; color: #ea580c;">Transportadora</th>
-                <th style="padding: 5px 4px; text-align: center; width: 9%;">Data Início</th>
-                <th style="padding: 5px 6px; text-align: right; width: 10%;">Valor Total</th>
-                <th style="padding: 5px 6px; text-align: left; width: 12%;">Status Atual</th>
-                <th style="padding: 5px 6px; text-align: right; width: 9%;">Prazo / SLA</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rowsHtml}
-            </tbody>
-          </table>
-
-          <div class="avoid-break" style="margin-top: 10px; border-top: 1px solid #e2e8f0; padding-top: 5px; font-size: 7pt; color: #94a3b8; text-align: center;">
-            DEC Entregas & Gestão Logística - Relatório Oficial Operacional
-          </div>
-        `;
-
-        const opt = {
-          margin: [6, 6, 6, 6],
-          filename: `relatorio-entregas-dec-${new Date().toISOString().slice(0, 10)}.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
-          pagebreak: { mode: ['avoid-all', 'css', 'legacy'], avoid: ['tr', '.avoid-break'] }
         };
 
-        html2pdf().set(opt).from(element).save().then(() => {
+        // Algoritmo de Paginação Inteligente: Calcula altura estimada para cada pedido
+        const getRowHeightEstimate = (o) => {
+          const branches = o.branchOrders?.length || 1;
+          const client = ClientApp.getById(o.clientId);
+          const razaoSocial = client?.razaoSocial || o.clientRazaoSocial || '';
+          const clientName = o.clientName || client?.nomeFantasia || razaoSocial || '';
+          
+          let h = 44; // Altura base em px
+          if (branches > 1) {
+            h += (branches - 1) * 20;
+          }
+          if (razaoSocial && razaoSocial !== clientName && razaoSocial.length > 25) {
+            h += 14;
+          }
+          return h;
+        };
+
+        // Capacidade máxima de altura útil por página (em px)
+        // A4 Paisagem (297x210mm) com proporção 1060x748px
+        const MAX_PAGE_1_HEIGHT = 520; // Deixa 228px para cabeçalho principal, estatísticas e rodapé
+        const MAX_PAGE_N_HEIGHT = 570; // Deixa 178px para cabeçalho compacto e rodapé
+
+        const pages = [];
+        let currentPageItems = [];
+        let currentHeight = 0;
+
+        for (let i = 0; i < activeList.length; i++) {
+          const item = activeList[i];
+          const itemHeight = getRowHeightEstimate(item);
+          const maxLimit = pages.length === 0 ? MAX_PAGE_1_HEIGHT : MAX_PAGE_N_HEIGHT;
+
+          if (currentPageItems.length > 0 && (currentHeight + itemHeight > maxLimit)) {
+            pages.push(currentPageItems);
+            currentPageItems = [{ order: item, globalIndex: i }];
+            currentHeight = itemHeight;
+          } else {
+            currentPageItems.push({ order: item, globalIndex: i });
+            currentHeight += itemHeight;
+          }
+        }
+        if (currentPageItems.length > 0) {
+          pages.push(currentPageItems);
+        }
+
+        const totalPages = pages.length;
+
+        // Renderiza cada página de forma independente e delimitada
+        const pagesHtml = pages.map((pageItems, pageIdx) => {
+          const isFirstPage = pageIdx === 0;
+          const rowsMarkup = pageItems.map(item => renderRow(item.order, item.globalIndex)).join('');
+
+          const headerMarkup = isFirstPage ? `
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0284c7; padding-bottom: 8px; margin-bottom: 10px;">
+              <div>
+                <h1 style="font-size: 13pt; margin: 0; color: #0f172a; font-weight: 800; letter-spacing: -0.3px;">DEC Bebidas - Relatório de Entregas em Aberto</h1>
+                <p style="margin: 2px 0 0; font-size: 7.5pt; color: #64748b;">Monitoramento de Ciclo Logístico, Clientes & Transportadoras</p>
+              </div>
+              <div style="text-align: right; font-size: 7.5pt; color: #64748b;">
+                <b>Gerado em:</b> ${dateNowStr}<br>
+                <b>Total de Pedidos:</b> ${activeList.length} | <b>Volume:</b> <span style="color: #059669; font-weight: bold;">${formatCurrency(totalVal)}</span>
+              </div>
+            </div>
+          ` : `
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0284c7; padding-bottom: 6px; margin-bottom: 8px;">
+              <div>
+                <h2 style="font-size: 10.5pt; margin: 0; color: #0f172a; font-weight: 800; letter-spacing: -0.2px;">DEC Bebidas - Relatório de Entregas em Aberto <span style="font-size: 8.5pt; font-weight: 600; color: #64748b;">(Continuação)</span></h2>
+              </div>
+              <div style="text-align: right; font-size: 7.5pt; color: #64748b;">
+                <b>Gerado em:</b> ${dateNowStr} | <b>Total Pedidos:</b> ${activeList.length}
+              </div>
+            </div>
+          `;
+
+          return `
+            <div class="pdf-page-container" style="width: 1060px; height: 748px; min-height: 748px; max-height: 748px; box-sizing: border-box; padding: 20px 24px; background: #ffffff; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; page-break-inside: avoid;">
+              <div>
+                ${headerMarkup}
+
+                <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
+                  <thead>
+                    <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #cbd5e1; font-size: 7.2pt; text-transform: uppercase; color: #475569;">
+                      <th style="padding: 6px 3px; text-align: center; width: 3.5%;">#</th>
+                      <th style="padding: 6px 6px; text-align: left; width: 23.5%;">Cliente</th>
+                      <th style="padding: 6px 6px; text-align: left; width: 20%;">Nº Pedidos (Filiais)</th>
+                      <th style="padding: 6px 6px; text-align: left; width: 13.5%; color: #ea580c;">Transportadora</th>
+                      <th style="padding: 6px 4px; text-align: center; width: 9%;">Data Início</th>
+                      <th style="padding: 6px 6px; text-align: right; width: 10.5%;">Valor Total</th>
+                      <th style="padding: 6px 6px; text-align: left; width: 11%;">Status Atual</th>
+                      <th style="padding: 6px 6px; text-align: right; width: 9%;">Prazo / SLA</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rowsMarkup}
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Rodapé da Página com Numeração Oficial -->
+              <div style="border-top: 1px solid #e2e8f0; padding-top: 6px; margin-top: auto; font-size: 7.2pt; color: #94a3b8; display: flex; justify-content: space-between; align-items: center;">
+                <span>DEC Entregas & Gestão Logística - Relatório Oficial Operacional</span>
+                <span style="font-weight: 700; color: #64748b;">Página ${pageIdx + 1} de ${totalPages}</span>
+              </div>
+            </div>
+            ${pageIdx < totalPages - 1 ? '<div class="html2pdf__page-break" style="page-break-after: always; height: 0; margin: 0; padding: 0;"></div>' : ''}
+          `;
+        }).join('');
+
+        // Cria elemento temporário fixo no DOM para renderização precisa do html2canvas
+        const tempContainer = document.createElement('div');
+        tempContainer.id = 'pdf-render-temp-container';
+        tempContainer.style.position = 'fixed';
+        tempContainer.style.top = '0';
+        tempContainer.style.left = '-9999px';
+        tempContainer.style.width = '1060px';
+        tempContainer.style.background = '#ffffff';
+        tempContainer.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+        tempContainer.style.color = '#111827';
+        tempContainer.style.zIndex = '-9999';
+        tempContainer.innerHTML = pagesHtml;
+        document.body.appendChild(tempContainer);
+
+        const opt = {
+          margin: [0, 0, 0, 0],
+          filename: `relatorio-entregas-dec-${new Date().toISOString().slice(0, 10)}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { 
+            scale: 2, 
+            useCORS: true, 
+            letterRendering: true,
+            scrollY: 0,
+            scrollX: 0,
+            windowWidth: 1060
+          },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+          pagebreak: { mode: ['css', 'legacy'] }
+        };
+
+        html2pdf().set(opt).from(tempContainer).save().then(() => {
+          if (tempContainer.parentNode) {
+            tempContainer.parentNode.removeChild(tempContainer);
+          }
           showToast('Relatório PDF exportado com sucesso!');
+        }).catch((err) => {
+          if (tempContainer.parentNode) {
+            tempContainer.parentNode.removeChild(tempContainer);
+          }
+          console.error('Erro na exportação de PDF:', err);
+          showToast('Erro ao exportar PDF.', 'error');
         });
       }
     };
