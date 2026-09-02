@@ -1067,14 +1067,15 @@
       <table class="orders-table">
         <thead>
           <tr>
-            <th style="width: 110px;">Prazo / SLA</th>
+            <th style="width: 105px;">Prazo / SLA</th>
             <th>Cliente</th>
-            <th style="width: 230px;">Nº Pedidos</th>
-            <th style="width: 170px;">Transportadora</th>
-            <th style="width: 140px; text-align: right;">Valor Total</th>
-            <th style="width: 115px; text-align: center;">Data Início</th>
-            <th style="width: 190px;">Status Atual do Ciclo</th>
-            <th style="width: 120px; text-align: right;">Ações</th>
+            <th style="width: 200px;">Nº Pedidos</th>
+            <th style="width: 150px;">Transportadora</th>
+            <th style="width: 125px; text-align: right;">Valor Total</th>
+            <th style="width: 105px; text-align: center;">Data Início</th>
+            <th style="width: 115px; text-align: center; color: var(--accent-blue);"><i class="fa-regular fa-calendar-check"></i> Prazo Entrega</th>
+            <th style="width: 180px;">Status Atual do Ciclo</th>
+            <th style="width: 115px; text-align: right;">Ações</th>
           </tr>
         </thead>
         <tbody id="orders-table-body">
@@ -1166,14 +1167,19 @@
           </div>
 
           <div class="form-row">
-            <div class="form-group">
+            <div class="form-group" style="flex: 1;">
               <label class="form-label">Valor Total dos Pedidos (R$) <span style="font-size: 0.7rem; color: #34d399;">(Soma Automática)</span></label>
               <input type="number" step="0.01" class="form-input" id="form-order-value" placeholder="0,00" required style="font-weight: 800; color: #34d399; font-size: 1rem;">
             </div>
 
-            <div class="form-group">
+            <div class="form-group" style="flex: 1;">
               <label class="form-label">Data de Abertura do Pedido</label>
               <input type="datetime-local" class="form-input" id="form-order-date">
+            </div>
+
+            <div class="form-group" style="flex: 1;">
+              <label class="form-label"><i class="fa-regular fa-calendar-check" style="color: var(--accent-blue);"></i> Prazo de Entrega (Previsão)</label>
+              <input type="date" class="form-input" id="form-order-delivery-deadline">
             </div>
           </div>
 
@@ -1570,6 +1576,10 @@
     /* Formatação de data (sem hora por padrão, ou com hora se solicitado) */
     function formatDate(dateStr, includeTime = false) {
       if (!dateStr) return '-';
+      if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        const parts = dateStr.split('-');
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return dateStr;
       if (!includeTime) {
@@ -2331,6 +2341,7 @@
         document.getElementById('order-form').reset();
         document.getElementById('form-order-id').value = '';
         document.getElementById('form-order-carrier').value = '';
+        document.getElementById('form-order-delivery-deadline').value = '';
         
         // Limpa o buscador de cliente
         ClientPicker.clear();
@@ -2356,6 +2367,7 @@
         document.getElementById('form-order-carrier').value = (o.carrier && o.carrier.toLowerCase() !== 'transportadora' && o.carrier.toLowerCase() !== 'padrão') ? o.carrier : '';
         document.getElementById('form-order-value').value = o.totalValue || '';
         document.getElementById('form-order-date').value = o.createdAt ? new Date(o.createdAt).toISOString().slice(0, 16) : '';
+        document.getElementById('form-order-delivery-deadline').value = o.deliveryDeadline || '';
         document.getElementById('form-order-initial-status').value = o.currentStatus || 'colocar_pedido';
         document.getElementById('form-order-notes').value = o.notes || '';
 
@@ -2386,6 +2398,7 @@
         const totalValue = parseFloat(document.getElementById('form-order-value').value) || 0;
         const dateInput = document.getElementById('form-order-date').value;
         const createdAt = dateInput ? new Date(dateInput).toISOString() : new Date().toISOString();
+        const deliveryDeadline = document.getElementById('form-order-delivery-deadline').value.trim();
         const initialStatus = document.getElementById('form-order-initial-status').value;
         const notes = document.getElementById('form-order-notes').value.trim();
 
@@ -2430,6 +2443,7 @@
             target.orderNumbers = orderNumbers;
             target.totalValue = totalValue;
             target.createdAt = createdAt;
+            target.deliveryDeadline = deliveryDeadline;
             target.notes = notes;
             FirebaseEngine.syncOrder(target);
             showToast('Pedido atualizado com sucesso!');
@@ -2447,6 +2461,7 @@
             orderNumbers,
             totalValue,
             createdAt,
+            deliveryDeadline,
             currentStatus: initialStatus,
             active: initialStatus !== 'entregue',
             deliveredAt: initialStatus === 'entregue' ? nowTime : null,
@@ -2546,6 +2561,7 @@
           <div><b>Cliente:</b> ${clientCode ? `<span class="client-code-tag">${escapeHtml(clientCode)}</span> ` : ''}<b>${escapeHtml(o.clientName)}</b></div>
           ${razaoSocial && razaoSocial !== o.clientName ? `<div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Razão: ${escapeHtml(razaoSocial)}</div>` : ''}
           ${hasCarrier ? `<div style="margin: 4px 0;"><b>Transportadora:</b> <span style="color: #fb923c; font-weight: 700;">${escapeHtml(carrierText)}</span></div>` : ''}
+          ${o.deliveryDeadline ? `<div style="margin: 4px 0;"><b>Prazo de Entrega:</b> <span style="color: #38bdf8; font-weight: 700;">${formatDate(o.deliveryDeadline, false)}</span></div>` : ''}
           <div style="margin: 6px 0; display: flex; flex-direction: column; gap: 3px;">${tags}</div>
           <div style="margin-top: 6px;"><b>Valor Total:</b> <span style="color: var(--accent-green); font-weight: 700;">${formatCurrency(o.totalValue)}</span> | <b>Tempo em Aberto:</b> <span style="color: var(--accent-amber); font-weight: 700;">${totalLeadTime}</span></div>
         `;
@@ -2604,6 +2620,7 @@
                 </div>
               ` : ''}
               <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Criado em: ${formatDate(o.createdAt, true)}</div>
+              ${o.deliveryDeadline ? `<div style="font-size: 0.75rem; color: #38bdf8; font-weight: 700; margin-top: 2px;"><i class="fa-regular fa-calendar-check"></i> Prazo de Entrega: ${formatDate(o.deliveryDeadline, false)}</div>` : ''}
               <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 3px;">${tags}</div>
             </div>
             <div style="text-align: right;">
@@ -2699,7 +2716,7 @@
         if (activeOrders.length === 0) {
           tbody.innerHTML = `
             <tr>
-              <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 3rem 1rem;">
+              <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 3rem 1rem;">
                 <i class="fa-solid fa-box-open" style="font-size: 2.5rem; margin-bottom: 0.75rem; color: var(--border-light); display: block;"></i>
                 Nenhum pedido em aberto encontrado com os filtros selecionados.
               </td>
@@ -2783,14 +2800,23 @@
                 ${formatDate(o.createdAt, false)}
               </td>
 
-              <!-- 7. Status Atual -->
+              <!-- 7. Prazo de Entrega (Previsão) -->
+              <td style="text-align: center; white-space: nowrap;">
+                ${o.deliveryDeadline ? `
+                  <span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 700; font-size: 0.78rem; padding: 2px 7px; border-radius: 4px; background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.25);">
+                    <i class="fa-regular fa-calendar-check" style="font-size: 0.72rem;"></i> ${formatDate(o.deliveryDeadline, false)}
+                  </span>
+                ` : `<span style="color: var(--text-dim); font-size: 0.8rem;">-</span>`}
+              </td>
+
+              <!-- 8. Status Atual -->
               <td>
                 <select class="status-select status-${o.currentStatus}" onchange="OrderApp.handleStatusChange('${o.id}', this.value)">
                   ${statusOptions}
                 </select>
               </td>
 
-              <!-- 8. Ações -->
+              <!-- 9. Ações -->
               <td style="text-align: right;">
                 <div class="table-actions">
                   <button class="btn btn-secondary btn-icon-only" onclick="OrderApp.viewTimeline('${o.id}')" title="Ver Histórico & Tempos">
@@ -2998,6 +3024,15 @@
                 ${formatDate(o.createdAt, false)}
               </td>
 
+              <!-- Prazo de Entrega (Previsão) -->
+              <td style="padding: 5px 4px; font-size: 7.5pt; text-align: center; white-space: nowrap; vertical-align: middle;">
+                ${o.deliveryDeadline ? `
+                  <span style="background: #e0f2fe; border: 1px solid #bae6fd; color: #0369a1; padding: 1px 4px; border-radius: 3px; font-weight: 700; font-size: 7.2pt; display: inline-block;">
+                    ${formatDate(o.deliveryDeadline, false)}
+                  </span>
+                ` : `<span style="color: #cbd5e1; font-size: 7.5pt;">-</span>`}
+              </td>
+
               <!-- Valor Total -->
               <td style="padding: 5px 6px; text-align: right; font-weight: 800; color: #059669; font-size: 8.2pt; vertical-align: middle; white-space: nowrap;">
                 ${formatCurrency(o.totalValue)}
@@ -3099,14 +3134,15 @@
                 <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
                   <thead>
                     <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #cbd5e1; font-size: 7.2pt; text-transform: uppercase; color: #475569;">
-                      <th style="padding: 6px 3px; text-align: center; width: 3.5%;">#</th>
-                      <th style="padding: 6px 6px; text-align: left; width: 23.5%;">Cliente</th>
-                      <th style="padding: 6px 6px; text-align: left; width: 20%;">Nº Pedidos (Filiais)</th>
-                      <th style="padding: 6px 6px; text-align: left; width: 13.5%; color: #ea580c;">Transportadora</th>
-                      <th style="padding: 6px 4px; text-align: center; width: 9%;">Data Início</th>
-                      <th style="padding: 6px 6px; text-align: right; width: 10.5%;">Valor Total</th>
-                      <th style="padding: 6px 6px; text-align: left; width: 11%;">Status Atual</th>
-                      <th style="padding: 6px 6px; text-align: right; width: 9%;">Prazo / SLA</th>
+                      <th style="padding: 6px 3px; text-align: center; width: 3%;">#</th>
+                      <th style="padding: 6px 6px; text-align: left; width: 21%;">Cliente</th>
+                      <th style="padding: 6px 6px; text-align: left; width: 17.5%;">Nº Pedidos (Filiais)</th>
+                      <th style="padding: 6px 6px; text-align: left; width: 12.5%; color: #ea580c;">Transportadora</th>
+                      <th style="padding: 6px 4px; text-align: center; width: 8.5%;">Data Início</th>
+                      <th style="padding: 6px 4px; text-align: center; width: 9.5%; color: #0284c7;">Prazo Entrega</th>
+                      <th style="padding: 6px 6px; text-align: right; width: 10%;">Valor Total</th>
+                      <th style="padding: 6px 6px; text-align: left; width: 10%;">Status Atual</th>
+                      <th style="padding: 6px 6px; text-align: right; width: 8%;">Prazo / SLA</th>
                     </tr>
                   </thead>
                   <tbody>
