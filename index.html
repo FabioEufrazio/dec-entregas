@@ -1053,14 +1053,15 @@
       <table class="orders-table">
         <thead>
           <tr>
-            <th style="width: 110px;">Prazo / SLA</th>
+            <th style="width: 105px;">Prazo / SLA</th>
             <th>Cliente</th>
-            <th style="width: 230px;">Nº Pedidos</th>
-            <th style="width: 170px;">Transportadora</th>
-            <th style="width: 140px; text-align: right;">Valor Total</th>
-            <th style="width: 115px; text-align: center;">Data Início</th>
-            <th style="width: 190px;">Status Atual do Ciclo</th>
-            <th style="width: 120px; text-align: right;">Ações</th>
+            <th style="width: 200px;">Nº Pedidos</th>
+            <th style="width: 150px;">Transportadora</th>
+            <th style="width: 125px; text-align: right;">Valor Total</th>
+            <th style="width: 105px; text-align: center;">Data Início</th>
+            <th style="width: 115px; text-align: center; color: var(--accent-blue);"><i class="fa-regular fa-calendar-check"></i> Prazo Entrega</th>
+            <th style="width: 180px;">Status Atual do Ciclo</th>
+            <th style="width: 115px; text-align: right;">Ações</th>
           </tr>
         </thead>
         <tbody id="orders-table-body">
@@ -1152,14 +1153,19 @@
           </div>
 
           <div class="form-row">
-            <div class="form-group">
+            <div class="form-group" style="flex: 1;">
               <label class="form-label">Valor Total dos Pedidos (R$) <span style="font-size: 0.7rem; color: #34d399;">(Soma Automática)</span></label>
               <input type="number" step="0.01" class="form-input" id="form-order-value" placeholder="0,00" required style="font-weight: 800; color: #34d399; font-size: 1rem;">
             </div>
 
-            <div class="form-group">
+            <div class="form-group" style="flex: 1;">
               <label class="form-label">Data de Abertura do Pedido</label>
               <input type="datetime-local" class="form-input" id="form-order-date">
+            </div>
+
+            <div class="form-group" style="flex: 1;">
+              <label class="form-label"><i class="fa-regular fa-calendar-check" style="color: var(--accent-blue);"></i> Prazo de Entrega (Previsão)</label>
+              <input type="date" class="form-input" id="form-order-delivery-deadline">
             </div>
           </div>
 
@@ -1556,12 +1562,22 @@
     /* Formatação de data (sem hora por padrão, ou com hora se solicitado) */
     function formatDate(dateStr, includeTime = false) {
       if (!dateStr) return '-';
+      if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        const parts = dateStr.split('-');
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return dateStr;
       if (!includeTime) {
         return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
       }
       return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+
+    /* Sanitização e Formatação de Código de Cliente (Remove pontos mantendo código limpo) */
+    function cleanClientCode(raw) {
+      if (!raw) return '';
+      return String(raw).replace(/\./g, '').trim();
     }
 
     /* Formatação dos Números de Pedidos por Filial: (00.000.000), (00.000) e (00) sem o '#' */
@@ -1738,6 +1754,10 @@
         } catch (e) {
           this.clients = [];
         }
+        // Remove pontos dos códigos de clientes existentes
+        this.clients.forEach(c => {
+          if (c.code) c.code = cleanClientCode(c.code);
+        });
         this.updateHeaderCount();
         this.render();
       },
@@ -1789,6 +1809,7 @@
             let updatedCount = 0;
 
             importedList.forEach(imp => {
+              if (imp.code) imp.code = cleanClientCode(imp.code);
               if (!imp.id) imp.id = String(Date.now() + Math.floor(Math.random() * 10000));
               const existingIdx = this.clients.findIndex(c => 
                 String(c.id) === String(imp.id) || 
@@ -1925,7 +1946,7 @@
         HistoryStore.snapshot();
 
         const id = document.getElementById('client-form-id').value;
-        const code = document.getElementById('client-form-code').value.trim().toUpperCase();
+        const code = cleanClientCode(document.getElementById('client-form-code').value.trim().toUpperCase());
         const cnpj = document.getElementById('client-form-cnpj').value.trim();
         const ie = document.getElementById('client-form-ie').value.trim();
         const nomeFantasia = document.getElementById('client-form-nome-fantasia').value.trim();
@@ -2014,7 +2035,7 @@
           list = list.filter(c => 
             (c.nomeFantasia || '').toLowerCase().includes(q) ||
             (c.razaoSocial || '').toLowerCase().includes(q) ||
-            (c.code || '').toLowerCase().includes(q) ||
+            cleanClientCode(c.code || '').toLowerCase().includes(q) ||
             (c.cnpj || '').toLowerCase().includes(q) ||
             (c.cityUf || '').toLowerCase().includes(q)
           );
@@ -2028,11 +2049,12 @@
         tbody.innerHTML = list.map(c => {
           const cleanPhone = (c.phone || '').replace(/\D/g, '');
           const waLink = cleanPhone ? `https://wa.me/55${cleanPhone}` : null;
+          const codeTag = cleanClientCode(c.code);
 
           return `
             <tr>
               <td>
-                <span class="client-code-tag">${escapeHtml(c.code || 'S/CÓD')}</span>
+                <span class="client-code-tag">${escapeHtml(codeTag || 'S/CÓD')}</span>
               </td>
               <td>
                 <div style="font-weight: 700; color: var(--text-main);">${escapeHtml(c.nomeFantasia || c.razaoSocial)}</div>
@@ -2158,7 +2180,8 @@
 
         if (inputHidden) inputHidden.value = c.id;
         if (inputSearch) {
-          const codeTag = c.code ? `[${c.code}] ` : '';
+          const cleanCode = cleanClientCode(c.code);
+          const codeTag = cleanCode ? `[${cleanCode}] ` : '';
           const name = c.nomeFantasia || c.razaoSocial;
           inputSearch.value = `${codeTag}${name}`;
         }
@@ -2178,7 +2201,7 @@
           list = list.filter(c => 
             (c.nomeFantasia || '').toLowerCase().includes(q) ||
             (c.razaoSocial || '').toLowerCase().includes(q) ||
-            (c.code || '').toLowerCase().includes(q) ||
+            cleanClientCode(c.code || '').toLowerCase().includes(q) ||
             (c.cnpj || '').toLowerCase().includes(q) ||
             (c.cityUf || '').toLowerCase().includes(q)
           );
@@ -2198,11 +2221,12 @@
           const name = c.nomeFantasia || c.razaoSocial;
           const razao = c.razaoSocial && c.razaoSocial !== c.nomeFantasia ? c.razaoSocial : '';
           const cnpj = c.cnpj ? ` | CNPJ: ${c.cnpj}` : '';
+          const cleanCode = cleanClientCode(c.code);
 
           return `
             <div class="client-picker-item" onclick="ClientPicker.select('${c.id}')">
               <div style="font-weight: 700; color: #fff; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
-                ${c.code ? `<span class="client-code-tag">${escapeHtml(c.code)}</span>` : ''}
+                ${cleanCode ? `<span class="client-code-tag">${escapeHtml(cleanCode)}</span>` : ''}
                 <span>${escapeHtml(name)}</span>
               </div>
               ${(razao || cnpj) ? `
@@ -2245,6 +2269,9 @@
         this.orders.forEach(o => {
           if (!o.branchOrders && o.orderNumbers) {
             o.branchOrders = o.orderNumbers.map(n => ({ number: n, value: 0 }));
+          }
+          if (o.clientCode) {
+            o.clientCode = cleanClientCode(o.clientCode);
           }
         });
 
@@ -2317,6 +2344,7 @@
         document.getElementById('order-form').reset();
         document.getElementById('form-order-id').value = '';
         document.getElementById('form-order-carrier').value = '';
+        document.getElementById('form-order-delivery-deadline').value = '';
         
         // Limpa o buscador de cliente
         ClientPicker.clear();
@@ -2342,6 +2370,7 @@
         document.getElementById('form-order-carrier').value = (o.carrier && o.carrier.toLowerCase() !== 'transportadora' && o.carrier.toLowerCase() !== 'padrão') ? o.carrier : '';
         document.getElementById('form-order-value').value = o.totalValue || '';
         document.getElementById('form-order-date').value = o.createdAt ? new Date(o.createdAt).toISOString().slice(0, 16) : '';
+        document.getElementById('form-order-delivery-deadline').value = o.deliveryDeadline || '';
         document.getElementById('form-order-initial-status').value = o.currentStatus || 'colocar_pedido';
         document.getElementById('form-order-notes').value = o.notes || '';
 
@@ -2372,6 +2401,7 @@
         const totalValue = parseFloat(document.getElementById('form-order-value').value) || 0;
         const dateInput = document.getElementById('form-order-date').value;
         const createdAt = dateInput ? new Date(dateInput).toISOString() : new Date().toISOString();
+        const deliveryDeadline = document.getElementById('form-order-delivery-deadline').value.trim();
         const initialStatus = document.getElementById('form-order-initial-status').value;
         const notes = document.getElementById('form-order-notes').value.trim();
 
@@ -2400,7 +2430,7 @@
           return;
         }
 
-        const clientCode = client.code || '';
+        const clientCode = cleanClientCode(client.code || '');
         const clientName = client.nomeFantasia || client.razaoSocial;
         const razaoSocial = client.razaoSocial || client.nomeFantasia;
 
@@ -2416,6 +2446,7 @@
             target.orderNumbers = orderNumbers;
             target.totalValue = totalValue;
             target.createdAt = createdAt;
+            target.deliveryDeadline = deliveryDeadline;
             target.notes = notes;
             FirebaseEngine.syncOrder(target);
             showToast('Pedido atualizado com sucesso!');
@@ -2433,6 +2464,7 @@
             orderNumbers,
             totalValue,
             createdAt,
+            deliveryDeadline,
             currentStatus: initialStatus,
             active: initialStatus !== 'entregue',
             deliveredAt: initialStatus === 'entregue' ? nowTime : null,
@@ -2516,7 +2548,7 @@
         if (!o) return;
 
         const client = ClientApp.getById(o.clientId);
-        const clientCode = o.clientCode || client?.code || '';
+        const clientCode = cleanClientCode(o.clientCode || client?.code || '');
         const razaoSocial = client?.razaoSocial || o.clientRazaoSocial || '';
         const totalLeadTime = formatDuration(Date.now() - new Date(o.createdAt).getTime());
         const carrierText = (o.carrier || '').trim();
@@ -2532,6 +2564,7 @@
           <div><b>Cliente:</b> ${clientCode ? `<span class="client-code-tag">${escapeHtml(clientCode)}</span> ` : ''}<b>${escapeHtml(o.clientName)}</b></div>
           ${razaoSocial && razaoSocial !== o.clientName ? `<div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Razão: ${escapeHtml(razaoSocial)}</div>` : ''}
           ${hasCarrier ? `<div style="margin: 4px 0;"><b>Transportadora:</b> <span style="color: #fb923c; font-weight: 700;">${escapeHtml(carrierText)}</span></div>` : ''}
+          ${o.deliveryDeadline ? `<div style="margin: 4px 0;"><b>Prazo de Entrega:</b> <span style="color: #38bdf8; font-weight: 700;">${formatDate(o.deliveryDeadline, false)}</span></div>` : ''}
           <div style="margin: 6px 0; display: flex; flex-direction: column; gap: 3px;">${tags}</div>
           <div style="margin-top: 6px;"><b>Valor Total:</b> <span style="color: var(--accent-green); font-weight: 700;">${formatCurrency(o.totalValue)}</span> | <b>Tempo em Aberto:</b> <span style="color: var(--accent-amber); font-weight: 700;">${totalLeadTime}</span></div>
         `;
@@ -2564,7 +2597,7 @@
         if (!o) return;
 
         const client = ClientApp.getById(o.clientId);
-        const clientCode = o.clientCode || client?.code || '';
+        const clientCode = cleanClientCode(o.clientCode || client?.code || '');
         const razaoSocial = client?.razaoSocial || o.clientRazaoSocial || '';
         const totalCycle = o.deliveredAt ? formatDuration(new Date(o.deliveredAt).getTime() - new Date(o.createdAt).getTime()) : formatDuration(Date.now() - new Date(o.createdAt).getTime());
         const carrierText = (o.carrier || '').trim();
@@ -2590,6 +2623,7 @@
                 </div>
               ` : ''}
               <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Criado em: ${formatDate(o.createdAt, true)}</div>
+              ${o.deliveryDeadline ? `<div style="font-size: 0.75rem; color: #38bdf8; font-weight: 700; margin-top: 2px;"><i class="fa-regular fa-calendar-check"></i> Prazo de Entrega: ${formatDate(o.deliveryDeadline, false)}</div>` : ''}
               <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 3px;">${tags}</div>
             </div>
             <div style="text-align: right;">
@@ -2685,7 +2719,7 @@
         if (activeOrders.length === 0) {
           tbody.innerHTML = `
             <tr>
-              <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 3rem 1rem;">
+              <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 3rem 1rem;">
                 <i class="fa-solid fa-box-open" style="font-size: 2.5rem; margin-bottom: 0.75rem; color: var(--border-light); display: block;"></i>
                 Nenhum pedido em aberto encontrado com os filtros selecionados.
               </td>
@@ -2700,7 +2734,7 @@
           
           // Busca cliente e razão social
           const client = ClientApp.getById(o.clientId);
-          const clientCode = o.clientCode || client?.code || '';
+          const clientCode = cleanClientCode(o.clientCode || client?.code || '');
           const clientName = o.clientName || client?.nomeFantasia || client?.razaoSocial || '';
           const razaoSocial = client?.razaoSocial || o.clientRazaoSocial || '';
           
@@ -2769,14 +2803,23 @@
                 ${formatDate(o.createdAt, false)}
               </td>
 
-              <!-- 7. Status Atual -->
+              <!-- 7. Prazo de Entrega (Previsão) -->
+              <td style="text-align: center; white-space: nowrap;">
+                ${o.deliveryDeadline ? `
+                  <span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 700; font-size: 0.78rem; padding: 2px 7px; border-radius: 4px; background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.25);">
+                    <i class="fa-regular fa-calendar-check" style="font-size: 0.72rem;"></i> ${formatDate(o.deliveryDeadline, false)}
+                  </span>
+                ` : `<span style="color: var(--text-dim); font-size: 0.8rem;">-</span>`}
+              </td>
+
+              <!-- 8. Status Atual -->
               <td>
                 <select class="status-select status-${o.currentStatus}" onchange="OrderApp.handleStatusChange('${o.id}', this.value)">
                   ${statusOptions}
                 </select>
               </td>
 
-              <!-- 8. Ações -->
+              <!-- 9. Ações -->
               <td style="text-align: right;">
                 <div class="table-actions">
                   <button class="btn btn-secondary btn-icon-only" onclick="OrderApp.viewTimeline('${o.id}')" title="Ver Histórico & Tempos">
@@ -2829,7 +2872,7 @@
         if (q) {
           archived = archived.filter(o => {
             const client = ClientApp.getById(o.clientId);
-            const clientCode = o.clientCode || client?.code || '';
+            const clientCode = cleanClientCode(o.clientCode || client?.code || '');
             const razaoSocial = client?.razaoSocial || o.clientRazaoSocial || '';
             return (
               (o.clientName || '').toLowerCase().includes(q) ||
@@ -2850,7 +2893,7 @@
 
         tbody.innerHTML = archived.map(o => {
           const client = ClientApp.getById(o.clientId);
-          const clientCode = o.clientCode || client?.code || '';
+          const clientCode = cleanClientCode(o.clientCode || client?.code || '');
           const razaoSocial = client?.razaoSocial || o.clientRazaoSocial || '';
           const totalCycle = o.deliveredAt ? formatDuration(new Date(o.deliveredAt).getTime() - new Date(o.createdAt).getTime()) : '-';
           const carrierText = (o.carrier || '').trim();
@@ -2926,7 +2969,7 @@
         // Renderizador de uma linha da tabela
         const renderRow = (o, globalIdx) => {
           const client = ClientApp.getById(o.clientId);
-          const clientCode = o.clientCode || client?.code || '';
+          const clientCode = cleanClientCode(o.clientCode || client?.code || '');
           const clientName = o.clientName || client?.nomeFantasia || client?.razaoSocial || '';
           const razaoSocial = client?.razaoSocial || o.clientRazaoSocial || '';
           const sla = OrderApp.getSlaInfo(o.createdAt);
@@ -2982,6 +3025,15 @@
               <!-- Data Início (Sem hora) -->
               <td style="padding: 5px 4px; font-size: 7.5pt; color: #475569; font-weight: 600; text-align: center; white-space: nowrap; vertical-align: middle;">
                 ${formatDate(o.createdAt, false)}
+              </td>
+
+              <!-- Prazo de Entrega (Previsão) -->
+              <td style="padding: 5px 4px; font-size: 7.5pt; text-align: center; white-space: nowrap; vertical-align: middle;">
+                ${o.deliveryDeadline ? `
+                  <span style="background: #e0f2fe; border: 1px solid #bae6fd; color: #0369a1; padding: 1px 4px; border-radius: 3px; font-weight: 700; font-size: 7.2pt; display: inline-block;">
+                    ${formatDate(o.deliveryDeadline, false)}
+                  </span>
+                ` : `<span style="color: #cbd5e1; font-size: 7.5pt;">-</span>`}
               </td>
 
               <!-- Valor Total -->
@@ -3085,14 +3137,15 @@
                 <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
                   <thead>
                     <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #cbd5e1; font-size: 7.2pt; text-transform: uppercase; color: #475569;">
-                      <th style="padding: 6px 3px; text-align: center; width: 3.5%;">#</th>
-                      <th style="padding: 6px 6px; text-align: left; width: 23.5%;">Cliente</th>
-                      <th style="padding: 6px 6px; text-align: left; width: 20%;">Nº Pedidos (Filiais)</th>
-                      <th style="padding: 6px 6px; text-align: left; width: 13.5%; color: #ea580c;">Transportadora</th>
-                      <th style="padding: 6px 4px; text-align: center; width: 9%;">Data Início</th>
-                      <th style="padding: 6px 6px; text-align: right; width: 10.5%;">Valor Total</th>
-                      <th style="padding: 6px 6px; text-align: left; width: 11%;">Status Atual</th>
-                      <th style="padding: 6px 6px; text-align: right; width: 9%;">Prazo / SLA</th>
+                      <th style="padding: 6px 3px; text-align: center; width: 3%;">#</th>
+                      <th style="padding: 6px 6px; text-align: left; width: 21%;">Cliente</th>
+                      <th style="padding: 6px 6px; text-align: left; width: 17.5%;">Nº Pedidos (Filiais)</th>
+                      <th style="padding: 6px 6px; text-align: left; width: 12.5%; color: #ea580c;">Transportadora</th>
+                      <th style="padding: 6px 4px; text-align: center; width: 8.5%;">Data Início</th>
+                      <th style="padding: 6px 4px; text-align: center; width: 9.5%; color: #0284c7;">Prazo Entrega</th>
+                      <th style="padding: 6px 6px; text-align: right; width: 10%;">Valor Total</th>
+                      <th style="padding: 6px 6px; text-align: left; width: 10%;">Status Atual</th>
+                      <th style="padding: 6px 6px; text-align: right; width: 8%;">Prazo / SLA</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -3111,20 +3164,6 @@
           `;
         }).join('');
 
-        // Cria elemento temporário fixo no DOM para renderização precisa do html2canvas
-        const tempContainer = document.createElement('div');
-        tempContainer.id = 'pdf-render-temp-container';
-        tempContainer.style.position = 'fixed';
-        tempContainer.style.top = '0';
-        tempContainer.style.left = '-9999px';
-        tempContainer.style.width = '1060px';
-        tempContainer.style.background = '#ffffff';
-        tempContainer.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
-        tempContainer.style.color = '#111827';
-        tempContainer.style.zIndex = '-9999';
-        tempContainer.innerHTML = pagesHtml;
-        document.body.appendChild(tempContainer);
-
         const opt = {
           margin: [0, 0, 0, 0],
           filename: `relatorio-entregas-dec-${new Date().toISOString().slice(0, 10)}.pdf`,
@@ -3133,23 +3172,21 @@
             scale: 2, 
             useCORS: true, 
             letterRendering: true,
-            scrollY: 0,
             scrollX: 0,
+            scrollY: 0,
+            x: 0,
+            y: 0,
             windowWidth: 1060
           },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
           pagebreak: { mode: ['css', 'legacy'] }
         };
 
-        html2pdf().set(opt).from(tempContainer).save().then(() => {
-          if (tempContainer.parentNode) {
-            tempContainer.parentNode.removeChild(tempContainer);
-          }
+        // Passamos a string de HTML puro. O html2pdf processa isso em um iframe oculto
+        // nativamente, evitando gambiarras de DOM, z-index e telas em branco (x,y errados).
+        html2pdf().set(opt).from(pagesHtml).save().then(() => {
           showToast('Relatório PDF exportado com sucesso!');
         }).catch((err) => {
-          if (tempContainer.parentNode) {
-            tempContainer.parentNode.removeChild(tempContainer);
-          }
           console.error('Erro na exportação de PDF:', err);
           showToast('Erro ao exportar PDF.', 'error');
         });
