@@ -1588,6 +1588,12 @@
       return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     }
 
+    /* Sanitização e Formatação de Código de Cliente (Remove pontos mantendo código limpo) */
+    function cleanClientCode(raw) {
+      if (!raw) return '';
+      return String(raw).replace(/\./g, '').trim();
+    }
+
     /* Formatação dos Números de Pedidos por Filial: (00.000.000), (00.000) e (00) sem o '#' */
     function formatOrderNumber(raw) {
       if (!raw) return '';
@@ -1762,6 +1768,10 @@
         } catch (e) {
           this.clients = [];
         }
+        // Remove pontos dos códigos de clientes existentes
+        this.clients.forEach(c => {
+          if (c.code) c.code = cleanClientCode(c.code);
+        });
         this.updateHeaderCount();
         this.render();
       },
@@ -1813,6 +1823,7 @@
             let updatedCount = 0;
 
             importedList.forEach(imp => {
+              if (imp.code) imp.code = cleanClientCode(imp.code);
               if (!imp.id) imp.id = String(Date.now() + Math.floor(Math.random() * 10000));
               const existingIdx = this.clients.findIndex(c => 
                 String(c.id) === String(imp.id) || 
@@ -1949,7 +1960,7 @@
         HistoryStore.snapshot();
 
         const id = document.getElementById('client-form-id').value;
-        const code = document.getElementById('client-form-code').value.trim().toUpperCase();
+        const code = cleanClientCode(document.getElementById('client-form-code').value.trim().toUpperCase());
         const cnpj = document.getElementById('client-form-cnpj').value.trim();
         const ie = document.getElementById('client-form-ie').value.trim();
         const nomeFantasia = document.getElementById('client-form-nome-fantasia').value.trim();
@@ -2038,7 +2049,7 @@
           list = list.filter(c => 
             (c.nomeFantasia || '').toLowerCase().includes(q) ||
             (c.razaoSocial || '').toLowerCase().includes(q) ||
-            (c.code || '').toLowerCase().includes(q) ||
+            cleanClientCode(c.code || '').toLowerCase().includes(q) ||
             (c.cnpj || '').toLowerCase().includes(q) ||
             (c.cityUf || '').toLowerCase().includes(q)
           );
@@ -2052,11 +2063,12 @@
         tbody.innerHTML = list.map(c => {
           const cleanPhone = (c.phone || '').replace(/\D/g, '');
           const waLink = cleanPhone ? `https://wa.me/55${cleanPhone}` : null;
+          const codeTag = cleanClientCode(c.code);
 
           return `
             <tr>
               <td>
-                <span class="client-code-tag">${escapeHtml(c.code || 'S/CÓD')}</span>
+                <span class="client-code-tag">${escapeHtml(codeTag || 'S/CÓD')}</span>
               </td>
               <td>
                 <div style="font-weight: 700; color: var(--text-main);">${escapeHtml(c.nomeFantasia || c.razaoSocial)}</div>
@@ -2182,7 +2194,8 @@
 
         if (inputHidden) inputHidden.value = c.id;
         if (inputSearch) {
-          const codeTag = c.code ? `[${c.code}] ` : '';
+          const cleanCode = cleanClientCode(c.code);
+          const codeTag = cleanCode ? `[${cleanCode}] ` : '';
           const name = c.nomeFantasia || c.razaoSocial;
           inputSearch.value = `${codeTag}${name}`;
         }
@@ -2202,7 +2215,7 @@
           list = list.filter(c => 
             (c.nomeFantasia || '').toLowerCase().includes(q) ||
             (c.razaoSocial || '').toLowerCase().includes(q) ||
-            (c.code || '').toLowerCase().includes(q) ||
+            cleanClientCode(c.code || '').toLowerCase().includes(q) ||
             (c.cnpj || '').toLowerCase().includes(q) ||
             (c.cityUf || '').toLowerCase().includes(q)
           );
@@ -2222,11 +2235,12 @@
           const name = c.nomeFantasia || c.razaoSocial;
           const razao = c.razaoSocial && c.razaoSocial !== c.nomeFantasia ? c.razaoSocial : '';
           const cnpj = c.cnpj ? ` | CNPJ: ${c.cnpj}` : '';
+          const cleanCode = cleanClientCode(c.code);
 
           return `
             <div class="client-picker-item" onclick="ClientPicker.select('${c.id}')">
               <div style="font-weight: 700; color: #fff; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
-                ${c.code ? `<span class="client-code-tag">${escapeHtml(c.code)}</span>` : ''}
+                ${cleanCode ? `<span class="client-code-tag">${escapeHtml(cleanCode)}</span>` : ''}
                 <span>${escapeHtml(name)}</span>
               </div>
               ${(razao || cnpj) ? `
@@ -2269,6 +2283,9 @@
         this.orders.forEach(o => {
           if (!o.branchOrders && o.orderNumbers) {
             o.branchOrders = o.orderNumbers.map(n => ({ number: n, value: 0 }));
+          }
+          if (o.clientCode) {
+            o.clientCode = cleanClientCode(o.clientCode);
           }
         });
 
@@ -2427,7 +2444,7 @@
           return;
         }
 
-        const clientCode = client.code || '';
+        const clientCode = cleanClientCode(client.code || '');
         const clientName = client.nomeFantasia || client.razaoSocial;
         const razaoSocial = client.razaoSocial || client.nomeFantasia;
 
@@ -2545,7 +2562,7 @@
         if (!o) return;
 
         const client = ClientApp.getById(o.clientId);
-        const clientCode = o.clientCode || client?.code || '';
+        const clientCode = cleanClientCode(o.clientCode || client?.code || '');
         const razaoSocial = client?.razaoSocial || o.clientRazaoSocial || '';
         const totalLeadTime = formatDuration(Date.now() - new Date(o.createdAt).getTime());
         const carrierText = (o.carrier || '').trim();
@@ -2594,7 +2611,7 @@
         if (!o) return;
 
         const client = ClientApp.getById(o.clientId);
-        const clientCode = o.clientCode || client?.code || '';
+        const clientCode = cleanClientCode(o.clientCode || client?.code || '');
         const razaoSocial = client?.razaoSocial || o.clientRazaoSocial || '';
         const totalCycle = o.deliveredAt ? formatDuration(new Date(o.deliveredAt).getTime() - new Date(o.createdAt).getTime()) : formatDuration(Date.now() - new Date(o.createdAt).getTime());
         const carrierText = (o.carrier || '').trim();
@@ -2731,7 +2748,7 @@
           
           // Busca cliente e razão social
           const client = ClientApp.getById(o.clientId);
-          const clientCode = o.clientCode || client?.code || '';
+          const clientCode = cleanClientCode(o.clientCode || client?.code || '');
           const clientName = o.clientName || client?.nomeFantasia || client?.razaoSocial || '';
           const razaoSocial = client?.razaoSocial || o.clientRazaoSocial || '';
           
@@ -2869,7 +2886,7 @@
         if (q) {
           archived = archived.filter(o => {
             const client = ClientApp.getById(o.clientId);
-            const clientCode = o.clientCode || client?.code || '';
+            const clientCode = cleanClientCode(o.clientCode || client?.code || '');
             const razaoSocial = client?.razaoSocial || o.clientRazaoSocial || '';
             return (
               (o.clientName || '').toLowerCase().includes(q) ||
@@ -2890,7 +2907,7 @@
 
         tbody.innerHTML = archived.map(o => {
           const client = ClientApp.getById(o.clientId);
-          const clientCode = o.clientCode || client?.code || '';
+          const clientCode = cleanClientCode(o.clientCode || client?.code || '');
           const razaoSocial = client?.razaoSocial || o.clientRazaoSocial || '';
           const totalCycle = o.deliveredAt ? formatDuration(new Date(o.deliveredAt).getTime() - new Date(o.createdAt).getTime()) : '-';
           const carrierText = (o.carrier || '').trim();
@@ -2966,7 +2983,7 @@
         // Renderizador de uma linha da tabela
         const renderRow = (o, globalIdx) => {
           const client = ClientApp.getById(o.clientId);
-          const clientCode = o.clientCode || client?.code || '';
+          const clientCode = cleanClientCode(o.clientCode || client?.code || '');
           const clientName = o.clientName || client?.nomeFantasia || client?.razaoSocial || '';
           const razaoSocial = client?.razaoSocial || o.clientRazaoSocial || '';
           const sla = OrderApp.getSlaInfo(o.createdAt);
@@ -3166,12 +3183,14 @@
         tempContainer.id = 'pdf-render-temp-container';
         tempContainer.style.position = 'fixed';
         tempContainer.style.top = '0';
-        tempContainer.style.left = '-9999px';
+        tempContainer.style.left = '0';
         tempContainer.style.width = '1060px';
         tempContainer.style.background = '#ffffff';
         tempContainer.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
         tempContainer.style.color = '#111827';
         tempContainer.style.zIndex = '-9999';
+        tempContainer.style.opacity = '1';
+        tempContainer.style.pointerEvents = 'none';
         tempContainer.innerHTML = pagesHtml;
         document.body.appendChild(tempContainer);
 
@@ -3184,8 +3203,7 @@
             useCORS: true, 
             letterRendering: true,
             scrollY: 0,
-            scrollX: 0,
-            windowWidth: 1060
+            scrollX: 0
           },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
           pagebreak: { mode: ['css', 'legacy'] }
