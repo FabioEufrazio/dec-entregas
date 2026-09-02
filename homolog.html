@@ -3178,20 +3178,6 @@
           `;
         }).join('');
 
-        // Cria elemento temporário fixo no DOM para renderização precisa do html2canvas
-        const tempContainer = document.createElement('div');
-        tempContainer.id = 'pdf-render-temp-container';
-        tempContainer.style.position = 'fixed';
-        tempContainer.style.top = '0';
-        tempContainer.style.left = '-9999px';
-        tempContainer.style.width = '1060px';
-        tempContainer.style.background = '#ffffff';
-        tempContainer.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
-        tempContainer.style.color = '#111827';
-        tempContainer.style.zIndex = '-9999';
-        tempContainer.innerHTML = pagesHtml;
-        document.body.appendChild(tempContainer);
-
         const opt = {
           margin: [0, 0, 0, 0],
           filename: `relatorio-entregas-dec-${new Date().toISOString().slice(0, 10)}.pdf`,
@@ -3200,23 +3186,17 @@
             scale: 2, 
             useCORS: true, 
             letterRendering: true,
-            scrollY: 0,
-            scrollX: 0,
             windowWidth: 1060
           },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
           pagebreak: { mode: ['css', 'legacy'] }
         };
 
-        html2pdf().set(opt).from(tempContainer).save().then(() => {
-          if (tempContainer.parentNode) {
-            tempContainer.parentNode.removeChild(tempContainer);
-          }
+        // Passamos a string de HTML puro. O html2pdf processa isso em um iframe oculto
+        // nativamente, evitando gambiarras de DOM, z-index e telas em branco (x,y errados).
+        html2pdf().set(opt).from(pagesHtml).save().then(() => {
           showToast('Relatório PDF exportado com sucesso!');
         }).catch((err) => {
-          if (tempContainer.parentNode) {
-            tempContainer.parentNode.removeChild(tempContainer);
-          }
           console.error('Erro na exportação de PDF:', err);
           showToast('Erro ao exportar PDF.', 'error');
         });
