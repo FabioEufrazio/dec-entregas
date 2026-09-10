@@ -933,6 +933,10 @@
           <i class="fa-solid fa-rotate-right"></i> Refazer
         </button>
 
+        <button class="btn btn-secondary" onclick="ModalEngine.open('backup-modal')" title="Backup e Recuperação Geral de Dados">
+          <i class="fa-solid fa-database" style="color: var(--accent-blue);"></i> Backup
+        </button>
+
         <button class="btn btn-purple" onclick="ModalEngine.open('clients-modal')">
           <i class="fa-solid fa-users"></i> Clientes <span class="badge-count" id="header-clients-count">0</span>
         </button>
@@ -1495,6 +1499,82 @@
   <!-- ==========================================================================
        MODAL 7: CONFIGURAÇÕES DO FIREBASE CLOUD
        ========================================================================== -->
+  
+  <!-- ==========================================================================
+       MODAL 8: GERENCIAMENTO DE BACKUP, RESTAURAÇÃO E DADOS
+       ========================================================================== -->
+  <div class="modal-overlay" id="backup-modal">
+    <div class="modal-card" style="max-width: 580px;">
+      <div class="modal-header">
+        <h2><i class="fa-solid fa-database" style="color: var(--accent-blue);"></i> Gerenciamento de Backup & Dados</h2>
+        <button class="modal-close-btn" onclick="ModalEngine.close('backup-modal')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="modal-body">
+        <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: var(--radius-md); padding: 0.85rem 1rem; margin-bottom: 1.25rem;">
+          <div style="font-size: 0.85rem; font-weight: 700; color: var(--accent-blue); margin-bottom: 0.25rem;">
+            <i class="fa-solid fa-shield-halved"></i> Todos os seus pedidos estão seguros
+          </div>
+          <div style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.4;">
+            Status atual na memória: <b style="color: var(--text-main);" id="backup-modal-orders-count">0 pedidos</b> e <b style="color: var(--text-main);" id="backup-modal-clients-count">0 clientes</b>.
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+          <!-- Opção 1: Restaurar Pedidos Recuperados -->
+          <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.85rem 1rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+            <div>
+              <div style="font-weight: 700; font-size: 0.85rem; color: var(--accent-green);"><i class="fa-solid fa-wand-magic-sparkles"></i> Restaurar Pedidos Anteriores</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Carrega e unifica todos os 9 pedidos acompanhados resgatados do sistema.</div>
+            </div>
+            <button type="button" class="btn btn-success" onclick="BackupEngine.restoreEmbeddedRecovery()" style="white-space: nowrap;">
+              <i class="fa-solid fa-rotate"></i> Restaurar (9)
+            </button>
+          </div>
+
+          <!-- Opção 2: Exportar Backup Completo -->
+          <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.85rem 1rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+            <div>
+              <div style="font-weight: 700; font-size: 0.85rem; color: var(--text-main);"><i class="fa-solid fa-file-export"></i> Exportar Backup Completo (.JSON)</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Gera arquivo de segurança completo com todos os pedidos e clientes.</div>
+            </div>
+            <button type="button" class="btn btn-secondary" onclick="BackupEngine.exportFullBackup()" style="white-space: nowrap;">
+              <i class="fa-solid fa-download"></i> Baixar Backup
+            </button>
+          </div>
+
+          <!-- Opção 3: Importar Backup -->
+          <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.85rem 1rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+            <div>
+              <div style="font-weight: 700; font-size: 0.85rem; color: var(--text-main);"><i class="fa-solid fa-file-import"></i> Importar Arquivo de Backup (.JSON)</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Restaura pedidos e clientes de um arquivo de backup salvo.</div>
+            </div>
+            <label class="btn btn-secondary" style="white-space: nowrap; cursor: pointer; margin-bottom: 0;">
+              <i class="fa-solid fa-upload"></i> Escolher Arquivo
+              <input type="file" accept=".json" style="display: none;" onchange="BackupEngine.importFullBackup(event)">
+            </label>
+          </div>
+
+          <!-- Opção 4: Sincronizar Homologação e Produção -->
+          <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.85rem 1rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+            <div>
+              <div style="font-weight: 700; font-size: 0.85rem; color: var(--text-main);"><i class="fa-solid fa-arrows-rotate"></i> Sincronizar Homologação e Produção</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Mescla e unifica pedidos entre as duas versões sem duplicar.</div>
+            </div>
+            <button type="button" class="btn btn-secondary" onclick="BackupEngine.syncCrossEnvironments()" style="white-space: nowrap;">
+              <i class="fa-solid fa-sync"></i> Sincronizar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <div></div>
+        <button type="button" class="btn btn-secondary" onclick="ModalEngine.close('backup-modal')">Fechar</button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="firebase-modal">
     <div class="modal-card" style="max-width: 500px;">
       <div class="modal-header">
