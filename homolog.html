@@ -3294,6 +3294,9 @@
       open(modalId) {
         const el = document.getElementById(modalId);
         if (el) el.classList.add('active');
+        if (modalId === 'backup-modal') {
+          BackupEngine.updateStats();
+        }
       },
       close(modalId) {
         const el = document.getElementById(modalId);
@@ -3305,6 +3308,714 @@
       openAddClientQuick() {
         this.open('clients-modal');
         ClientApp.openForm();
+      }
+    };
+
+    /* --------------------------------------------------------------------------
+       DADOS EMBUTIDOS DE RECUPERAÇÃO E MOTOR DE BACKUP
+       -------------------------------------------------------------------------- */
+    const EMBEDDED_RECOVERY_DATA = {
+  "version": "1.0",
+  "exportedAt": "2026-09-10T13:22:46.284Z",
+  "totalOrders": 9,
+  "totalClients": 11,
+  "orders": [
+    {
+      "id": "1788202757149",
+      "clientId": "1788202709953",
+      "clientCode": "2444307",
+      "clientName": "FLR ARMAZEM",
+      "clientRazaoSocial": "FLR ARMAZEM LTDA",
+      "carrier": "PA Log",
+      "branchOrders": [
+        {
+          "number": "59.092.061",
+          "value": 1647.31
+        }
+      ],
+      "orderNumbers": [
+        "59.092.061"
+      ],
+      "totalValue": 1647.31,
+      "createdAt": "2026-09-01T15:50:00.000Z",
+      "currentStatus": "transportadora",
+      "active": true,
+      "deliveredAt": null,
+      "notes": "Coletou dia 03",
+      "statusHistory": [
+        {
+          "status": "pedido_colocado",
+          "enteredAt": "2026-08-31T21:50:00.000Z",
+          "leftAt": "2026-08-31T20:44:38.581Z",
+          "durationMs": 0
+        },
+        {
+          "status": "separacao",
+          "enteredAt": "2026-08-31T20:44:38.581Z",
+          "leftAt": "2026-09-02T12:48:22.674Z",
+          "durationMs": 144224093
+        },
+        {
+          "status": "faturado",
+          "enteredAt": "2026-09-02T12:48:22.674Z",
+          "leftAt": "2026-09-03T11:12:59.404Z",
+          "durationMs": 80676730
+        },
+        {
+          "status": "transportadora",
+          "enteredAt": "2026-09-03T11:12:59.404Z",
+          "leftAt": null,
+          "durationMs": null
+        }
+      ],
+      "deliveryDeadline": "2026-09-10"
+    },
+    {
+      "id": "1788200689979",
+      "clientId": "1788200695764",
+      "clientCode": "2348203",
+      "clientName": "ALEXANDRE MACIEL RIBEIRO",
+      "clientRazaoSocial": "ALEXANDRE MACIEL RIBEIRO",
+      "carrier": "PA Log",
+      "branchOrders": [
+        {
+          "number": "58.933.364",
+          "value": 303.56
+        }
+      ],
+      "orderNumbers": [
+        "58.933.364"
+      ],
+      "totalValue": 303.56,
+      "createdAt": "2026-08-31T21:24:00.000Z",
+      "currentStatus": "transportadora",
+      "active": true,
+      "deliveredAt": null,
+      "notes": "",
+      "statusHistory": [
+        {
+          "status": "colocar_pedido",
+          "enteredAt": "2026-08-31T18:24:20.241Z",
+          "leftAt": "2026-08-31T18:38:37.835Z",
+          "durationMs": 857594
+        },
+        {
+          "status": "transportadora",
+          "enteredAt": "2026-08-31T18:38:37.835Z",
+          "leftAt": null,
+          "durationMs": null
+        }
+      ]
+    },
+    {
+      "id": "1788201308928",
+      "clientId": "1788192817045",
+      "clientCode": "2148643",
+      "clientName": "BEER HOUSE",
+      "clientRazaoSocial": "BEER HOUSE BAR E RESTAURANTE LTDA",
+      "carrier": "PA Log",
+      "branchOrders": [
+        {
+          "number": "59.063.779",
+          "value": 272.66
+        },
+        {
+          "number": "59.063.780",
+          "value": 69.96
+        }
+      ],
+      "orderNumbers": [
+        "59.063.779",
+        "59.063.780"
+      ],
+      "totalValue": 342.62,
+      "createdAt": "2026-08-28T21:34:00.000Z",
+      "currentStatus": "faturado",
+      "active": true,
+      "deliveredAt": null,
+      "notes": "",
+      "statusHistory": [
+        {
+          "status": "colocar_pedido",
+          "enteredAt": "2026-08-31T19:17:00.000Z",
+          "leftAt": "2026-08-31T16:20:59.587Z",
+          "durationMs": 0
+        },
+        {
+          "status": "faturado",
+          "enteredAt": "2026-08-31T16:20:59.587Z",
+          "leftAt": null,
+          "durationMs": null
+        }
+      ]
+    },
+    {
+      "id": "1788193245368",
+      "clientId": "1788193114540",
+      "clientCode": "2518175",
+      "clientName": "VAZ DISTRIBUIDORA LTDA",
+      "clientRazaoSocial": "VAZ DISTRIBUIDORA LTDA",
+      "carrier": "mc transportes",
+      "branchOrders": [
+        {
+          "number": "59.063.780",
+          "value": 310.44
+        }
+      ],
+      "orderNumbers": [
+        "59.063.780"
+      ],
+      "totalValue": 310.44,
+      "createdAt": "2026-08-26T22:18:00.000Z",
+      "currentStatus": "transportadora",
+      "active": true,
+      "deliveredAt": null,
+      "notes": "",
+      "statusHistory": [
+        {
+          "status": "colocar_pedido",
+          "enteredAt": "2026-08-26T19:18:00.000Z",
+          "leftAt": "2026-08-31T16:20:56.191Z",
+          "durationMs": 421376191
+        },
+        {
+          "status": "transportadora",
+          "enteredAt": "2026-08-31T16:20:56.191Z",
+          "leftAt": null,
+          "durationMs": null
+        }
+      ]
+    },
+    {
+      "id": "1788201362544",
+      "clientId": "1788193402990",
+      "clientCode": "1732144",
+      "clientName": "KINA BEER",
+      "clientRazaoSocial": "RENATA APARECIDA BRONZE BERTOLACCINI LTDA",
+      "carrier": "PA Log",
+      "branchOrders": [
+        {
+          "number": "59.037.786",
+          "value": 477.6
+        }
+      ],
+      "orderNumbers": [
+        "59.037.786"
+      ],
+      "totalValue": 477.6,
+      "createdAt": "2026-08-26T21:35:00.000Z",
+      "currentStatus": "transportadora",
+      "active": true,
+      "deliveredAt": null,
+      "notes": "",
+      "statusHistory": [
+        {
+          "status": "transportadora",
+          "enteredAt": "2026-08-26T21:35:00.000Z",
+          "leftAt": null,
+          "durationMs": null
+        }
+      ]
+    },
+    {
+      "id": "1788200692502",
+      "clientId": "1788193114540",
+      "clientCode": "2518175",
+      "clientName": "VAZ DISTRIBUIDORA LTDA",
+      "clientRazaoSocial": "VAZ DISTRIBUIDORA LTDA",
+      "carrier": "mc transportes",
+      "branchOrders": [
+        {
+          "number": "59.037.786",
+          "value": 310.44
+        }
+      ],
+      "orderNumbers": [
+        "59.037.786"
+      ],
+      "totalValue": 310.44,
+      "createdAt": "2026-08-26T21:24:00.000Z",
+      "currentStatus": "transportadora",
+      "active": true,
+      "deliveredAt": null,
+      "notes": "Importado automaticamente via Print/OCR",
+      "statusHistory": [
+        {
+          "status": "colocar_pedido",
+          "enteredAt": "2026-08-31T18:24:20.241Z",
+          "leftAt": "2026-08-31T18:37:20.568Z",
+          "durationMs": 780327
+        },
+        {
+          "status": "transportadora",
+          "enteredAt": "2026-08-31T18:37:20.568Z",
+          "leftAt": null,
+          "durationMs": null
+        }
+      ]
+    },
+    {
+      "id": "1788200694397",
+      "clientId": "1788193724452",
+      "clientCode": "2422288",
+      "clientName": "BEER FEST",
+      "clientRazaoSocial": "VALDIRENE REGINA DA SILVA & CIA LTDA",
+      "carrier": "PA Log",
+      "branchOrders": [
+        {
+          "number": "59.033.477",
+          "value": 273.83
+        },
+        {
+          "number": "59.033.478",
+          "value": 106.8
+        }
+      ],
+      "orderNumbers": [
+        "59.033.477",
+        "59.033.478"
+      ],
+      "totalValue": 380.63,
+      "createdAt": "2026-08-26T21:00:00.000Z",
+      "currentStatus": "transportadora",
+      "active": true,
+      "deliveredAt": null,
+      "notes": "Importado automaticamente via Print/OCR",
+      "statusHistory": [
+        {
+          "status": "colocar_pedido",
+          "enteredAt": "2026-08-31T19:27:00.000Z",
+          "leftAt": "2026-08-31T16:30:16.046Z",
+          "durationMs": 0
+        },
+        {
+          "status": "transportadora",
+          "enteredAt": "2026-08-31T16:30:16.046Z",
+          "leftAt": "2026-08-31T16:30:24.181Z",
+          "durationMs": 8135
+        },
+        {
+          "status": "separacao",
+          "enteredAt": "2026-08-31T16:30:24.181Z",
+          "leftAt": "2026-08-31T16:30:26.058Z",
+          "durationMs": 1877
+        },
+        {
+          "status": "pedido_colocado",
+          "enteredAt": "2026-08-31T16:30:26.058Z",
+          "leftAt": "2026-08-31T16:30:27.789Z",
+          "durationMs": 1731
+        },
+        {
+          "status": "colocar_pedido",
+          "enteredAt": "2026-08-31T16:30:27.789Z",
+          "leftAt": "2026-08-31T16:30:29.978Z",
+          "durationMs": 2189
+        },
+        {
+          "status": "transportadora",
+          "enteredAt": "2026-08-31T16:30:29.978Z",
+          "leftAt": null,
+          "durationMs": null
+        }
+      ]
+    },
+    {
+      "id": "1788200692537",
+      "clientId": "1788193568217",
+      "clientCode": "1155313",
+      "clientName": "BAR DA MARIA",
+      "clientRazaoSocial": "MARIA AUXILIADORA GUIMARAES DA GAMA",
+      "carrier": "PA Log",
+      "branchOrders": [
+        {
+          "number": "59.035.575",
+          "value": 469.36
+        }
+      ],
+      "orderNumbers": [
+        "59.035.575"
+      ],
+      "totalValue": 469.36,
+      "createdAt": "2026-08-26T18:00:00.000Z",
+      "currentStatus": "transportadora",
+      "active": true,
+      "deliveredAt": null,
+      "notes": "",
+      "statusHistory": [
+        {
+          "status": "colocar_pedido",
+          "enteredAt": "2026-08-26T15:00:00.000Z",
+          "leftAt": "2026-08-31T18:38:42.058Z",
+          "durationMs": 445122058
+        },
+        {
+          "status": "transportadora",
+          "enteredAt": "2026-08-31T18:38:42.058Z",
+          "leftAt": null,
+          "durationMs": null
+        }
+      ]
+    },
+    {
+      "id": "1788200688180",
+      "clientId": "1788193982044",
+      "clientCode": "2390501",
+      "clientName": "ADEGA DO PATRAO",
+      "clientRazaoSocial": "ADEGA DO PATRAO COMERCIO DE BEBIDAS E ALIMENTOS LTDA.",
+      "carrier": "PA Log",
+      "branchOrders": [
+        {
+          "number": "59.020.691",
+          "value": 1478.84
+        }
+      ],
+      "orderNumbers": [
+        "59.020.691"
+      ],
+      "totalValue": 1478.84,
+      "createdAt": "2026-08-25T21:00:00.000Z",
+      "currentStatus": "transportadora",
+      "active": true,
+      "deliveredAt": null,
+      "notes": "",
+      "statusHistory": [
+        {
+          "status": "colocar_pedido",
+          "enteredAt": "2026-08-02T15:00:00.000Z",
+          "leftAt": "2026-08-31T18:37:29.814Z",
+          "durationMs": 2518649814
+        },
+        {
+          "status": "transportadora",
+          "enteredAt": "2026-08-31T18:37:29.814Z",
+          "leftAt": null,
+          "durationMs": null
+        }
+      ],
+      "deliveryDeadline": "2026-09-08"
+    }
+  ],
+  "clients": [
+    {
+      "id": "1788193982044",
+      "code": "2390501",
+      "cnpj": "20.124.226/0001-01",
+      "ie": "",
+      "nomeFantasia": "ADEGA DO PATRAO",
+      "razaoSocial": "ADEGA DO PATRAO COMERCIO DE BEBIDAS E ALIMENTOS LTDA.",
+      "contact": "Marco / Thaise",
+      "phone": "",
+      "email": "",
+      "address": "RUA ELISA RIBEIRO COSTA, 28 SALA 2 - FAMILIA ANDRADE",
+      "cityUf": "SANTA RITA DO SAPUCAI / MG",
+      "createdAt": "2026-08-31T16:33:01.432Z"
+    },
+    {
+      "id": "1788193724452",
+      "code": "2422288",
+      "cnpj": "38.543.236/0001-47",
+      "ie": "",
+      "nomeFantasia": "BEER FEST",
+      "razaoSocial": "VALDIRENE REGINA DA SILVA & CIA LTDA",
+      "contact": "Valdirene",
+      "phone": "",
+      "email": "",
+      "address": "RUA JOSE PINTO VILELA, 71 B - CENTRO",
+      "cityUf": "SANTA RITA DO SAPUCAI / MG",
+      "createdAt": "2026-08-31T16:28:43.527Z"
+    },
+    {
+      "id": "1788193568217",
+      "code": "1155313",
+      "cnpj": "22.374.714/0001-00",
+      "ie": "",
+      "nomeFantasia": "BAR DA MARIA",
+      "razaoSocial": "MARIA AUXILIADORA GUIMARAES DA GAMA",
+      "contact": "Monique / Juliana",
+      "phone": "",
+      "email": "",
+      "address": "- SAO VICENTE",
+      "cityUf": "ITAJUBA / MG",
+      "createdAt": "2026-08-31T16:26:07.972Z"
+    },
+    {
+      "id": "1788193402990",
+      "code": "1732144",
+      "cnpj": "35.909.700/0001-88",
+      "ie": "",
+      "nomeFantasia": "KINA BEER",
+      "razaoSocial": "RENATA APARECIDA BRONZE BERTOLACCINI LTDA",
+      "contact": "Juliano",
+      "phone": "",
+      "email": "",
+      "address": "RUA JOAO BATISTA CRUZ, 85  - RESIDENCIAL MORUMBI II",
+      "cityUf": "POUSO ALEGRE / MG",
+      "createdAt": "2026-08-31T16:23:22.438Z"
+    },
+    {
+      "id": "1788193114540",
+      "code": "2518175",
+      "cnpj": "48.360.639/0002-95",
+      "ie": "",
+      "nomeFantasia": "VAZ DISTRIBUIDORA LTDA",
+      "razaoSocial": "VAZ DISTRIBUIDORA LTDA",
+      "contact": "Marcelo",
+      "phone": "",
+      "email": "",
+      "address": "AVENIDA PRESIDENTE JUSCELINO, 206  - SAO FRANCISCO",
+      "cityUf": "PIUMHI / MG",
+      "createdAt": "2026-08-31T16:18:34.113Z"
+    },
+    {
+      "id": "1788192817045",
+      "code": "2148643",
+      "cnpj": "51.162.903/0001-00",
+      "ie": "",
+      "nomeFantasia": "BEER HOUSE",
+      "razaoSocial": "BEER HOUSE BAR E RESTAURANTE LTDA",
+      "contact": "Fernanda",
+      "phone": "",
+      "email": "",
+      "address": "PRACA DELFIM MOREIRA JUNIOR, 54  - CENTRO",
+      "cityUf": "SANTA RITA DO SAPUCAI / MG",
+      "createdAt": "2026-08-31T16:13:37.014Z"
+    },
+    {
+      "id": "1788200695764",
+      "code": "2348203",
+      "nomeFantasia": "ALEXANDRE MACIEL RIBEIRO",
+      "razaoSocial": "ALEXANDRE MACIEL RIBEIRO",
+      "cnpj": "",
+      "ie": "",
+      "contact": "",
+      "phone": "",
+      "email": "",
+      "address": "",
+      "cityUf": "",
+      "createdAt": "2026-08-31T18:24:46.836Z"
+    },
+    {
+      "id": "1788878509100",
+      "code": "2106134",
+      "cnpj": "28.257.369/0001-01",
+      "ie": "",
+      "nomeFantasia": "DECK",
+      "razaoSocial": "R&R EMPREENDIMENTOS",
+      "contact": "",
+      "phone": "",
+      "email": "",
+      "address": "",
+      "cityUf": "",
+      "createdAt": "2026-09-08T14:41:48.705Z"
+    },
+    {
+      "id": "1788526411037",
+      "code": "2575161",
+      "cnpj": "28.464.948/0001-17",
+      "ie": "",
+      "nomeFantasia": "RECANTO DO RICARDO",
+      "razaoSocial": "RICARDO VELOSO DA SILVA",
+      "contact": "",
+      "phone": "",
+      "email": "",
+      "address": "AV JUSCELINO KUBITSCHEK DE OLIVEIRA, 660",
+      "cityUf": "PIRANGUINHO",
+      "createdAt": "2026-09-04T12:53:30.278Z"
+    },
+    {
+      "id": "1788526234479",
+      "code": "280341",
+      "cnpj": "07.895.884/0001-39",
+      "ie": "",
+      "nomeFantasia": "SUPERMERCADO DA CRISTINA",
+      "razaoSocial": "MARIA CRISTINA PEREIRA DOS SANTOS",
+      "contact": "Cristina",
+      "phone": "",
+      "email": "",
+      "address": ",171 - CENTRO",
+      "cityUf": "SAO JOSE DO ALEGRE / MG",
+      "createdAt": "2026-09-04T12:50:33.797Z"
+    },
+    {
+      "id": "1788202709953",
+      "code": "2444307",
+      "cnpj": "60.530.064/0001-26",
+      "ie": "",
+      "nomeFantasia": "FLR ARMAZEM",
+      "razaoSocial": "FLR ARMAZEM LTDA",
+      "contact": "Bruno",
+      "phone": "",
+      "email": "",
+      "address": "RUA ANTONIO SIMAO MAUAD, 693  - PINHEIRINHO",
+      "cityUf": "ITAJUBA / MG",
+      "createdAt": "2026-08-31T18:58:29.912Z"
+    }
+  ]
+};
+
+    const BackupEngine = {
+      updateStats() {
+        const ordersEl = document.getElementById('backup-modal-orders-count');
+        const clientsEl = document.getElementById('backup-modal-clients-count');
+        if (ordersEl) ordersEl.textContent = `${OrderApp.orders.length} pedidos`;
+        if (clientsEl) clientsEl.textContent = `${ClientApp.clients.length} clientes`;
+      },
+
+      restoreEmbeddedRecovery() {
+        if (typeof EMBEDDED_RECOVERY_DATA === 'undefined') {
+          showToast('Dados de recuperação não encontrados.', 'error');
+          return;
+        }
+        let restoredOrdersCount = 0;
+        let restoredClientsCount = 0;
+
+        (EMBEDDED_RECOVERY_DATA.clients || []).forEach(c => {
+          const exists = ClientApp.clients.some(existing => String(existing.id) === String(c.id) || (existing.code && cleanClientCode(existing.code) === cleanClientCode(c.code)));
+          if (!exists) {
+            ClientApp.clients.push(c);
+            restoredClientsCount++;
+            FirebaseEngine.syncClient(c);
+          }
+        });
+
+        (EMBEDDED_RECOVERY_DATA.orders || []).forEach(o => {
+          const exists = OrderApp.orders.some(existing => String(existing.id) === String(o.id));
+          if (!exists) {
+            OrderApp.orders.push(o);
+            restoredOrdersCount++;
+            FirebaseEngine.syncOrder(o);
+          }
+        });
+
+        ClientApp.saveLocally();
+        ClientApp.render();
+        OrderApp.saveLocally();
+        OrderApp.render();
+        this.updateStats();
+
+        showToast(`Restauração concluída! ${restoredOrdersCount} pedidos e ${restoredClientsCount} clientes unificados.`, 'success');
+      },
+
+      exportFullBackup() {
+        const data = {
+          version: "1.0",
+          exportedAt: new Date().toISOString(),
+          environment: APP_ENV.env,
+          totalOrders: OrderApp.orders.length,
+          totalClients: ClientApp.clients.length,
+          orders: OrderApp.orders,
+          clients: ClientApp.clients
+        };
+        const jsonStr = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const filename = `backup-tracklog-${APP_ENV.env}-${new Date().toISOString().slice(0, 10)}.json`;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('Backup exportado com sucesso!', 'success');
+      },
+
+      importFullBackup(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const data = JSON.parse(e.target.result);
+            if (!data || (!data.orders && !data.clients)) {
+              showToast('Arquivo de backup inválido.', 'error');
+              return;
+            }
+            let addedOrders = 0;
+            let addedClients = 0;
+
+            if (Array.isArray(data.clients)) {
+              data.clients.forEach(c => {
+                const idx = ClientApp.clients.findIndex(existing => String(existing.id) === String(c.id));
+                if (idx >= 0) {
+                  ClientApp.clients[idx] = c;
+                } else {
+                  ClientApp.clients.push(c);
+                  addedClients++;
+                }
+                FirebaseEngine.syncClient(c);
+              });
+            }
+
+            if (Array.isArray(data.orders)) {
+              data.orders.forEach(o => {
+                const idx = OrderApp.orders.findIndex(existing => String(existing.id) === String(o.id));
+                if (idx >= 0) {
+                  OrderApp.orders[idx] = o;
+                } else {
+                  OrderApp.orders.push(o);
+                  addedOrders++;
+                }
+                FirebaseEngine.syncOrder(o);
+              });
+            }
+
+            ClientApp.saveLocally();
+            ClientApp.render();
+            OrderApp.saveLocally();
+            OrderApp.render();
+            this.updateStats();
+            showToast(`Importação concluída! ${addedOrders} pedidos e ${addedClients} clientes importados.`, 'success');
+          } catch (err) {
+            console.error(err);
+            showToast('Erro ao ler o arquivo de backup.', 'error');
+          }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+      },
+
+      syncCrossEnvironments() {
+        const otherOrdersKey = APP_ENV.isStaging ? 'tracklog_orders_v1' : 'tracklog_orders_staging_v1';
+        const otherClientsKey = APP_ENV.isStaging ? 'tracklog_clients_v1' : 'tracklog_clients_staging_v1';
+
+        let otherOrders = [];
+        let otherClients = [];
+
+        try {
+          const storedO = localStorage.getItem(otherOrdersKey);
+          if (storedO) otherOrders = JSON.parse(storedO);
+          const storedC = localStorage.getItem(otherClientsKey);
+          if (storedC) otherClients = JSON.parse(storedC);
+        } catch(e) {}
+
+        let syncedO = 0;
+        let syncedC = 0;
+
+        otherClients.forEach(c => {
+          const exists = ClientApp.clients.some(existing => String(existing.id) === String(c.id));
+          if (!exists) {
+            ClientApp.clients.push(c);
+            syncedC++;
+            FirebaseEngine.syncClient(c);
+          }
+        });
+
+        otherOrders.forEach(o => {
+          const exists = OrderApp.orders.some(existing => String(existing.id) === String(o.id));
+          if (!exists) {
+            OrderApp.orders.push(o);
+            syncedO++;
+            FirebaseEngine.syncOrder(o);
+          }
+        });
+
+        ClientApp.saveLocally();
+        ClientApp.render();
+        OrderApp.saveLocally();
+        OrderApp.render();
+        this.updateStats();
+
+        showToast(`Sincronização concluída! ${syncedO} pedidos e ${syncedC} clientes unificados do ambiente oposto.`, 'success');
       }
     };
 
@@ -3382,19 +4093,24 @@
       listenToCloud() {
         if (!this.db) return;
         
-        // Ouve Pedidos
+        // Ouve Pedidos (Mesclando para não apagar dados criados localmente)
         this.db.collection(APP_ENV.ordersCollection).onSnapshot(snap => {
           if (!snap.empty) {
-            const list = [];
+            const cloudList = [];
             snap.forEach(doc => {
               const data = doc.data();
-              if (data && data.id) list.push(data);
+              if (data && data.id) cloudList.push(data);
             });
-            if (list.length > 0) {
+            if (cloudList.length > 0) {
+              const map = new Map();
+              OrderApp.orders.forEach(o => map.set(String(o.id), o));
+              cloudList.forEach(o => map.set(String(o.id), o));
+
+              const mergedList = Array.from(map.values());
               const oldJson = JSON.stringify(OrderApp.orders);
-              const newJson = JSON.stringify(list);
+              const newJson = JSON.stringify(mergedList);
               if (oldJson !== newJson) {
-                OrderApp.orders = list;
+                OrderApp.orders = mergedList;
                 OrderApp.saveLocally();
                 OrderApp.render();
               }
@@ -3402,19 +4118,24 @@
           }
         }, err => console.log("Erro escuta pedidos", err));
 
-        // Ouve Clientes
+        // Ouve Clientes (Mesclando para não apagar dados criados localmente)
         this.db.collection(APP_ENV.clientsCollection).onSnapshot(snap => {
           if (!snap.empty) {
-            const list = [];
+            const cloudList = [];
             snap.forEach(doc => {
               const data = doc.data();
-              if (data && data.id) list.push(data);
+              if (data && data.id) cloudList.push(data);
             });
-            if (list.length > 0) {
+            if (cloudList.length > 0) {
+              const map = new Map();
+              ClientApp.clients.forEach(c => map.set(String(c.id), c));
+              cloudList.forEach(c => map.set(String(c.id), c));
+
+              const mergedList = Array.from(map.values());
               const oldJson = JSON.stringify(ClientApp.clients);
-              const newJson = JSON.stringify(list);
+              const newJson = JSON.stringify(mergedList);
               if (oldJson !== newJson) {
-                ClientApp.clients = list;
+                ClientApp.clients = mergedList;
                 ClientApp.saveLocally();
                 ClientApp.render();
               }
