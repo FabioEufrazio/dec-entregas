@@ -1231,9 +1231,9 @@
                          class="form-input" 
                          placeholder="🔍 Digite Nome, Código, Razão ou CNPJ..." 
                          autocomplete="off" 
-                         onfocus="ClientPicker.show()" 
-                         oninput="ClientPicker.handleInput(this.value)">
-                  <button type="button" id="btn-clear-client-selection" onclick="ClientPicker.clear()" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.9rem;">
+                         onfocus="ClientPicker.show('order')" 
+                         oninput="ClientPicker.handleInput('order', this.value)">
+                  <button type="button" id="btn-clear-client-selection" onclick="ClientPicker.clear('order')" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.9rem;">
                     <i class="fa-solid fa-xmark"></i>
                   </button>
                 </div>
@@ -1411,9 +1411,17 @@
           <form id="task-form" onsubmit="TaskApp.save(event)" style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end;">
             <div class="form-group" style="margin: 0;">
               <label class="form-label" style="font-size: 0.8rem;">Cliente (Opcional)</label>
-              <select id="task-client-id" class="form-input">
-                <option value="">Selecione um cliente...</option>
-              </select>
+              <div class="client-picker-wrapper">
+                <input type="hidden" id="task-client-id">
+                <div class="search-input-wrapper" style="width: 100%;">
+                  <i class="fa-solid fa-magnifying-glass search-icon-left"></i>
+                  <input type="text" id="task-client-search" class="form-input" placeholder="Buscar cliente..." autocomplete="off" onfocus="ClientPicker.show('taskAdd')" oninput="ClientPicker.handleInput('taskAdd', this.value)">
+                  <button type="button" id="btn-clear-task-client" onclick="ClientPicker.clear('taskAdd')" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.9rem;">
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+                <div id="task-client-dropdown" class="client-picker-dropdown"></div>
+              </div>
             </div>
             <div class="form-group" style="margin: 0;">
               <label class="form-label" style="font-size: 0.8rem;">Descrição da Tarefa / Visita</label>
@@ -1491,9 +1499,17 @@
             
             <div class="form-group" style="margin: 0;">
               <label class="form-label" style="font-size: 0.85rem; color: #94a3b8;">Cliente (Opcional)</label>
-              <select id="edit-task-client-id" class="form-input">
-                <option value="">Selecione um cliente...</option>
-              </select>
+              <div class="client-picker-wrapper">
+                <input type="hidden" id="edit-task-client-id">
+                <div class="search-input-wrapper" style="width: 100%;">
+                  <i class="fa-solid fa-magnifying-glass search-icon-left"></i>
+                  <input type="text" id="edit-task-client-search" class="form-input" placeholder="Buscar cliente..." autocomplete="off" onfocus="ClientPicker.show('taskEdit')" oninput="ClientPicker.handleInput('taskEdit', this.value)">
+                  <button type="button" id="btn-clear-edit-task-client" onclick="ClientPicker.clear('taskEdit')" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.9rem;">
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+                <div id="edit-task-client-dropdown" class="client-picker-dropdown"></div>
+              </div>
             </div>
             
             <div class="form-group" style="margin: 0;">
@@ -2485,7 +2501,7 @@
         }
 
         if (cnpj) {
-          const duplicate = this.clients.find(c => c.cnpj === cnpj && String(c.id) !== String(id));
+          const duplicate = this.clients.find(c => c && c.cnpj === cnpj && String(c.id) !== String(id));
           if (duplicate) {
             showToast('Já existe um cliente cadastrado com este CNPJ!', 'error');
             return;
@@ -2695,57 +2711,87 @@
        CONTROLADOR DO BUSCADOR INTELIGENTE DE CLIENTES (CLIENT PICKER)
        -------------------------------------------------------------------------- */
     const ClientPicker = {
-      show() {
-        this.renderDropdown(document.getElementById('form-order-client-search')?.value || '');
-        const dropdown = document.getElementById('client-picker-dropdown');
+      instances: {},
+
+      register(name, config) {
+        this.instances[name] = config;
+      },
+
+      show(name) {
+        const conf = this.instances[name];
+        if (!conf) return;
+        this.renderDropdown(name, document.getElementById(conf.searchId)?.value || '');
+        const dropdown = document.getElementById(conf.dropdownId);
         if (dropdown) dropdown.classList.add('active');
       },
 
-      hide() {
-        const dropdown = document.getElementById('client-picker-dropdown');
+      hide(name) {
+        const conf = this.instances[name];
+        if (!conf) return;
+        const dropdown = document.getElementById(conf.dropdownId);
         if (dropdown) dropdown.classList.remove('active');
       },
 
-      handleInput(val) {
-        this.show();
-        this.renderDropdown(val);
+      hideAll() {
+        Object.keys(this.instances).forEach(name => this.hide(name));
       },
 
-      clear() {
-        const inputHidden = document.getElementById('form-order-client-id');
-        const inputSearch = document.getElementById('form-order-client-search');
-        const btnClear = document.getElementById('btn-clear-client-selection');
+      handleInput(name, val) {
+        this.show(name);
+        this.renderDropdown(name, val);
+      },
+
+      clear(name) {
+        const conf = this.instances[name];
+        if (!conf) return;
+        const inputHidden = document.getElementById(conf.hiddenId);
+        const inputSearch = document.getElementById(conf.searchId);
+        const btnClear = document.getElementById(conf.clearBtnId);
         if (inputHidden) inputHidden.value = '';
         if (inputSearch) inputSearch.value = '';
         if (btnClear) btnClear.style.display = 'none';
-        this.hide();
+        this.hide(name);
       },
 
-      select(clientId) {
+      select(name, clientId) {
+        const conf = this.instances[name];
+        if (!conf) return;
         const c = ClientApp.getById(clientId);
         if (!c) return;
 
-        const inputHidden = document.getElementById('form-order-client-id');
-        const inputSearch = document.getElementById('form-order-client-search');
-        const btnClear = document.getElementById('btn-clear-client-selection');
+        const inputHidden = document.getElementById(conf.hiddenId);
+        const inputSearch = document.getElementById(conf.searchId);
+        const btnClear = document.getElementById(conf.clearBtnId);
 
         if (inputHidden) inputHidden.value = c.id;
         if (inputSearch) {
           const cleanCode = cleanClientCode(c.code);
           const codeTag = cleanCode ? `[${cleanCode}] ` : '';
-          const name = c.nomeFantasia || c.razaoSocial;
-          inputSearch.value = `${codeTag}${name}`;
+          const nameStr = c.nomeFantasia || c.razaoSocial;
+          inputSearch.value = `${codeTag}${nameStr}`;
         }
         if (btnClear) btnClear.style.display = 'block';
 
-        this.hide();
+        this.hide(name);
       },
 
-      renderDropdown(query = '') {
-        const dropdown = document.getElementById('client-picker-dropdown');
+      renderDropdown(name, query = '') {
+        const conf = this.instances[name];
+        if (!conf) return;
+        const dropdown = document.getElementById(conf.dropdownId);
         if (!dropdown) return;
 
         const q = (query || '').toLowerCase().trim();
+        
+        if (!q && conf.requireTyping) {
+          dropdown.innerHTML = `
+            <div class="client-picker-empty" style="color: #64748b; font-size: 0.8rem; text-align: center; padding: 15px;">
+              Comece a digitar para buscar um cliente...
+            </div>
+          `;
+          return;
+        }
+
         let list = [...ClientApp.clients].sort((a,b) => (a.nomeFantasia || a.razaoSocial || '').localeCompare(b.nomeFantasia || b.razaoSocial || ''));
 
         if (q) {
@@ -2769,20 +2815,20 @@
         }
 
         dropdown.innerHTML = list.map(c => {
-          const name = c.nomeFantasia || c.razaoSocial;
+          const nameStr = c.nomeFantasia || c.razaoSocial;
           const razao = c.razaoSocial && c.razaoSocial !== c.nomeFantasia ? c.razaoSocial : '';
-          const cnpj = c.cnpj ? ` | CNPJ: ${c.cnpj}` : '';
+          const cnpjStr = c.cnpj ? ` | CNPJ: ${c.cnpj}` : '';
           const cleanCode = cleanClientCode(c.code);
 
           return `
-            <div class="client-picker-item" onclick="ClientPicker.select('${c.id}')">
+            <div class="client-picker-item" onclick="ClientPicker.select('${name}', '${c.id}')">
               <div style="font-weight: 700; color: #fff; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
                 ${cleanCode ? `<span class="client-code-tag">${escapeHtml(cleanCode)}</span>` : ''}
-                <span>${escapeHtml(name)}</span>
+                <span>${escapeHtml(nameStr)}</span>
               </div>
-              ${(razao || cnpj) ? `
+              ${(razao || cnpjStr) ? `
                 <div style="font-size: 0.72rem; color: #94a3b8; line-height: 1.2;">
-                  ${escapeHtml(razao)}${escapeHtml(cnpj)}
+                  ${escapeHtml(razao)}${escapeHtml(cnpjStr)}
                 </div>
               ` : ''}
             </div>
@@ -2791,12 +2837,39 @@
       }
     };
 
+    ClientPicker.register('order', {
+      hiddenId: 'form-order-client-id',
+      searchId: 'form-order-client-search',
+      dropdownId: 'client-picker-dropdown',
+      clearBtnId: 'btn-clear-client-selection',
+      requireTyping: false
+    });
+
+    ClientPicker.register('taskAdd', {
+      hiddenId: 'task-client-id',
+      searchId: 'task-client-search',
+      dropdownId: 'task-client-dropdown',
+      clearBtnId: 'btn-clear-task-client',
+      requireTyping: true
+    });
+
+    ClientPicker.register('taskEdit', {
+      hiddenId: 'edit-task-client-id',
+      searchId: 'edit-task-client-search',
+      dropdownId: 'edit-task-client-dropdown',
+      clearBtnId: 'btn-clear-edit-task-client',
+      requireTyping: true
+    });
+
     // Fecha o buscador se clicar fora
     document.addEventListener('click', (e) => {
-      const picker = document.querySelector('.client-picker-wrapper');
-      if (picker && !picker.contains(e.target)) {
-        ClientPicker.hide();
-      }
+      Object.keys(ClientPicker.instances).forEach(name => {
+        const conf = ClientPicker.instances[name];
+        const wrapper = document.getElementById(conf.searchId)?.closest('.client-picker-wrapper');
+        if (wrapper && !wrapper.contains(e.target)) {
+          ClientPicker.hide(name);
+        }
+      });
     });
 
     /* --------------------------------------------------------------------------
@@ -4507,22 +4580,7 @@
       },
 
       populateClientSelect() {
-        const optionsHTML = '<option value="">Selecione um cliente...</option>' + 
-          ClientApp.clients.map(c => `<option value="${c.id}">${c.nomeFantasia}</option>`).join('');
-          
-        const select = document.getElementById('task-client-id');
-        if (select) {
-          const currentVal = select.value;
-          select.innerHTML = optionsHTML;
-          select.value = currentVal;
-        }
-
-        const editSelect = document.getElementById('edit-task-client-id');
-        if (editSelect) {
-          const editCurrentVal = editSelect.value;
-          editSelect.innerHTML = optionsHTML;
-          editSelect.value = editCurrentVal;
-        }
+        // No longer needed since ClientPicker uses dynamic search inputs
       },
 
       editTask(id) {
@@ -4534,6 +4592,21 @@
         document.getElementById('edit-task-desc').value = task.description || '';
         document.getElementById('edit-task-date').value = task.date || '';
         
+        // Populando campo de busca para o modal de edição
+        if (task.clientId) {
+          const c = ClientApp.getById(task.clientId);
+          if (c) {
+            const cleanCode = cleanClientCode(c.code);
+            const codeTag = cleanCode ? `[${cleanCode}] ` : '';
+            const nameStr = c.nomeFantasia || c.razaoSocial;
+            document.getElementById('edit-task-client-search').value = `${codeTag}${nameStr}`;
+            document.getElementById('btn-clear-edit-task-client').style.display = 'block';
+          }
+        } else {
+          document.getElementById('edit-task-client-search').value = '';
+          document.getElementById('btn-clear-edit-task-client').style.display = 'none';
+        }
+
         ModalEngine.close('agenda-modal');
         ModalEngine.open('edit-task-modal');
       },
@@ -4541,6 +4614,8 @@
       cancelEdit() {
         document.getElementById('edit-task-form').reset();
         document.getElementById('edit-task-form-id').value = '';
+        document.getElementById('edit-task-client-search').value = '';
+        document.getElementById('btn-clear-edit-task-client').style.display = 'none';
         ModalEngine.close('edit-task-modal');
         ModalEngine.open('agenda-modal');
       },
@@ -4592,6 +4667,11 @@
         FirebaseEngine.syncTask(newTask);
         
         event.target.reset();
+        document.getElementById('task-client-search').value = '';
+        document.getElementById('task-client-id').value = '';
+        const btnClear = document.getElementById('btn-clear-task-client');
+        if (btnClear) btnClear.style.display = 'none';
+
         showToast('Tarefa / Visita agendada!', 'success');
         this.render();
       },
