@@ -24,16 +24,16 @@ content = content.replace(
   '<h1 id="app-title-text">DEC Entregas & Gestão Logística</h1>'
 );
 
-const stagingEnvRegex = /const APP_ENV = \{[\s\S]*?configStorageKey: 'tracklog_firebase_config_staging'\s*\};/;
+const stagingEnvRegex = /const APP_ENV = \{[\s\S]*?configStorageKey: 'decentregas_firebase_config_staging'\s*\};/;
 const prodEnv = `const APP_ENV = {
       env: 'production',
       name: 'Produção',
       isStaging: false,
       ordersCollection: 'orders',
       clientsCollection: 'clients',
-      ordersStorageKey: 'tracklog_orders_v1',
-      clientsStorageKey: 'tracklog_clients_v1',
-      configStorageKey: 'tracklog_firebase_config'
+      ordersStorageKey: 'decentregas_orders_v1',
+      clientsStorageKey: 'decentregas_clients_v1',
+      configStorageKey: 'decentregas_firebase_config'
     };`;
 
 content = content.replace(stagingEnvRegex, prodEnv);

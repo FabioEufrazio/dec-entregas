@@ -901,9 +901,24 @@
        10. MOBILE RESPONSIVENESS
        ========================================================================== */
     @media (max-width: 768px) {
+      #staging-top-banner {
+        display: none !important;
+      }
       .header-container {
         flex-direction: column;
         align-items: stretch;
+        gap: 0.5rem;
+      }
+      .header-actions {
+        width: 100%;
+        max-width: 100vw;
+        flex-wrap: nowrap !important;
+        overflow-x: auto;
+        padding-bottom: 5px;
+        -webkit-overflow-scrolling: touch;
+      }
+      .header-actions::-webkit-scrollbar {
+        display: none;
       }
       .header-right {
         justify-content: center;
@@ -1715,10 +1730,20 @@
       isStaging: true,
       ordersCollection: 'orders_staging',
       clientsCollection: 'clients_staging',
-      ordersStorageKey: 'tracklog_orders_staging_v1',
-      clientsStorageKey: 'tracklog_clients_staging_v1',
-      configStorageKey: 'tracklog_firebase_config_staging'
+      ordersStorageKey: 'decentregas_orders_staging_v1',
+      clientsStorageKey: 'decentregas_clients_staging_v1',
+      configStorageKey: 'decentregas_firebase_config_staging'
     };
+
+    // MIGRATION: Se o usuário tiver dados salvos com o prefixo antigo "tracklog", migramos para o novo "decentregas"
+    // Isso evita conflitos se ele abrir outros projetos e evita que ele perca a configuração atual.
+    ['orders_staging_v1', 'clients_staging_v1', 'firebase_config_staging', 'orders_v1', 'clients_v1', 'firebase_config'].forEach(suffix => {
+      const oldKey = `tracklog_${suffix}`;
+      const newKey = `decentregas_${suffix}`;
+      if (localStorage.getItem(oldKey) && !localStorage.getItem(newKey)) {
+        localStorage.setItem(newKey, localStorage.getItem(oldKey));
+      }
+    });
 
     /* --------------------------------------------------------------------------
        FUNÇÕES UTILITÁRIAS & FORMATAÇÃO
@@ -4037,7 +4062,7 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        const filename = `backup-tracklog-${APP_ENV.env}-${new Date().toISOString().slice(0, 10)}.json`;
+        const filename = `backup-decentregas-${APP_ENV.env}-${new Date().toISOString().slice(0, 10)}.json`;
         a.download = filename;
         a.click();
         URL.revokeObjectURL(url);
@@ -4100,8 +4125,8 @@
       },
 
       syncCrossEnvironments() {
-        const otherOrdersKey = APP_ENV.isStaging ? 'tracklog_orders_v1' : 'tracklog_orders_staging_v1';
-        const otherClientsKey = APP_ENV.isStaging ? 'tracklog_clients_v1' : 'tracklog_clients_staging_v1';
+        const otherOrdersKey = APP_ENV.isStaging ? 'decentregas_orders_v1' : 'decentregas_orders_staging_v1';
+        const otherClientsKey = APP_ENV.isStaging ? 'decentregas_clients_v1' : 'decentregas_clients_staging_v1';
 
         let otherOrders = [];
         let otherClients = [];
@@ -4150,12 +4175,12 @@
     const FirebaseEngine = {
       db: null,
       defaultConfig: {
-        apiKey: "AIzaSyChq5Csp9_rqxquU2ltNRenPuIJ7gBSlgs",
-        authDomain: "catalogo-dec-bebidas.firebaseapp.com",
-        projectId: "catalogo-dec-bebidas",
-        storageBucket: "catalogo-dec-bebidas.firebasestorage.app",
-        messagingSenderId: "378404909818",
-        appId: "1:378404909818:web:7f6fec7e86fa5baf5f4f43"
+        apiKey: "AIzaSyB2ArO22BUXnqIKc_Nelm3EapuQAiRRM80",
+        authDomain: "catalogo-online-dec.firebaseapp.com",
+        projectId: "catalogo-online-dec",
+        storageBucket: "catalogo-online-dec.firebasestorage.app",
+        messagingSenderId: "963138199795",
+        appId: "1:963138199795:web:da56b25b1da777193cd786"
       },
 
       init() {
@@ -4213,6 +4238,31 @@
         ModalEngine.close('firebase-modal');
         showToast('Configurações salvas! Conectando...', 'info');
         this.init();
+      },
+
+      async forceFullSync() {
+        if (!this.db) {
+          showToast('Conecte ao Firebase primeiro!', 'error');
+          return;
+        }
+        
+        showToast('Sincronizando com a nuvem...', 'info');
+        let syncedCount = 0;
+        
+        try {
+          for (const order of OrderApp.orders) {
+            this.syncOrder(order);
+            syncedCount++;
+          }
+          for (const client of ClientApp.clients) {
+            this.syncClient(client);
+            syncedCount++;
+          }
+          showToast(`Sincronização concluída! ${syncedCount} itens enviados para a nuvem.`, 'success');
+        } catch(e) {
+          console.error("Erro na sincronização manual", e);
+          showToast('Erro ao sincronizar. Tente novamente.', 'error');
+        }
       },
 
       listenToCloud() {
