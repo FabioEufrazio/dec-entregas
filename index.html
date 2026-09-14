@@ -1399,10 +1399,15 @@
       </div>
 
       <div class="modal-footer">
-        <div style="font-size: 0.75rem; color: var(--text-dim);">
+        <div style="font-size: 0.75rem; color: var(--text-dim);" id="clients-modal-hint">
           💾 Use <b>Exportar Backup</b> para levar seus clientes para o celular ou outro computador facilmente.
         </div>
-        <button type="button" class="btn btn-secondary" onclick="ModalEngine.close('clients-modal')">Fechar</button>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <button type="button" class="btn btn-danger" id="btn-delete-client-form" style="display: none;" onclick="ClientApp.deleteFromForm()" title="Excluir este cliente">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+          <button type="button" class="btn btn-secondary" onclick="ModalEngine.close('clients-modal')">Fechar</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1930,11 +1935,14 @@
         document.getElementById('clients-actions-bar').style.display = 'none';
         document.getElementById('clients-table-container').style.display = 'none';
         this.lastSearchedCnpj = '';
+        const btnDeleteForm = document.getElementById('btn-delete-client-form');
+        
         if (clientId) {
           const c = this.getById(clientId);
           if (c) {
             document.getElementById('client-form-title').textContent = 'Editar Cliente';
             document.getElementById('client-form-id').value = c.id;
+            if (btnDeleteForm) btnDeleteForm.style.display = 'flex';
             document.getElementById('client-form-code').value = c.code || '';
             document.getElementById('client-form-cnpj').value = c.cnpj || '';
             document.getElementById('client-form-ie').value = c.ie || '';
@@ -1951,6 +1959,7 @@
           document.getElementById('client-form-title').textContent = 'Cadastrar Novo Cliente';
           document.getElementById('client-form').reset();
           document.getElementById('client-form-id').value = '';
+          if (btnDeleteForm) btnDeleteForm.style.display = 'none';
         }
       },
 
@@ -1959,6 +1968,8 @@
         document.getElementById('clients-actions-bar').style.display = 'flex';
         document.getElementById('clients-table-container').style.display = 'block';
         document.getElementById('client-form').reset();
+        const btnDeleteForm = document.getElementById('btn-delete-client-form');
+        if (btnDeleteForm) btnDeleteForm.style.display = 'none';
         this.lastSearchedCnpj = '';
       },
 
@@ -2127,6 +2138,17 @@
           this.render(currentSearch);
           OrderApp.render();
           showToast('Cliente removido com sucesso!');
+          
+          if (document.getElementById('client-form-id')?.value === String(id)) {
+            this.closeForm();
+          }
+        }
+      },
+
+      deleteFromForm() {
+        const id = document.getElementById('client-form-id').value;
+        if (id) {
+          this.deleteClient(id);
         }
       },
 
