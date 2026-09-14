@@ -1020,19 +1020,12 @@
         </span>
 
         <!-- Botões de Ação Rápida -->
-        <button class="btn btn-secondary" onclick="HistoryStore.undo()" title="Desfazer Ação (Ctrl+Z)">
-          <i class="fa-solid fa-rotate-left"></i> Desfazer
-        </button>
-        <button class="btn btn-secondary" onclick="HistoryStore.redo()" title="Refazer Ação (Ctrl+Y)">
-          <i class="fa-solid fa-rotate-right"></i> Refazer
-        </button>
-
-        <button class="btn btn-secondary" onclick="ModalEngine.open('backup-modal')" title="Backup e Recuperação Geral de Dados">
-          <i class="fa-solid fa-database" style="color: var(--accent-blue);"></i> Backup
-        </button>
-
         <button class="btn btn-purple" onclick="ModalEngine.open('clients-modal')">
           <i class="fa-solid fa-users"></i> Clientes <span class="badge-count" id="header-clients-count">0</span>
+        </button>
+
+        <button class="btn btn-primary" onclick="ModalEngine.openAddOrder()">
+          <i class="fa-solid fa-plus"></i> Novo Pedido
         </button>
 
         <button class="btn btn-secondary" onclick="ModalEngine.open('archived-orders-modal')" title="Ver Histórico de Pedidos Entregues">
@@ -1043,8 +1036,8 @@
           <i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i> Exportar PDF
         </button>
 
-        <button class="btn btn-primary" onclick="ModalEngine.openAddOrder()">
-          <i class="fa-solid fa-plus"></i> Novo Pedido
+        <button class="btn btn-secondary" onclick="ModalEngine.open('backup-modal')" title="Backup e Recuperação Geral de Dados">
+          <i class="fa-solid fa-database" style="color: var(--accent-blue);"></i> Backup
         </button>
 
         <button class="btn btn-secondary btn-icon-only" onclick="FirebaseEngine.forceFullSync()" title="Forçar Sincronização Manual com a Nuvem">
