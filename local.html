@@ -215,7 +215,9 @@
       border-radius: 20px;
       font-size: 0.75rem;
       font-weight: 800;
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       min-width: 18px;
       text-align: center;
     }
@@ -1049,7 +1051,7 @@
 
         <!-- Botões de Ação Rápida -->
         <button class="btn btn-primary" style="background-color: #3b82f6; border-color: #3b82f6;" onclick="ModalEngine.open('agenda-modal')">
-          <i class="fa-solid fa-calendar-check"></i> Agenda <span class="badge-count" id="header-tasks-count" style="background: white; color: #3b82f6;">0</span>
+          <i class="fa-solid fa-calendar-check"></i> Agenda <span class="badge-count" id="header-tasks-count">0</span>
         </button>
         <button class="btn btn-purple" onclick="ModalEngine.open('clients-modal')">
           <i class="fa-solid fa-users"></i> Clientes <span class="badge-count" id="header-clients-count">0</span>
@@ -1405,8 +1407,9 @@
 
       <div class="modal-body">
         <!-- Formulário Rápido de Tarefa -->
-        <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+        <div style="background: #1e293b; border: 1px solid #334155; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
           <form id="task-form" onsubmit="TaskApp.save(event)" style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end;">
+            <input type="hidden" id="task-form-id">
             <div class="form-group" style="margin: 0;">
               <label class="form-label" style="font-size: 0.8rem;">Cliente (Opcional)</label>
               <select id="task-client-id" class="form-input">
@@ -1421,8 +1424,9 @@
               <label class="form-label" style="font-size: 0.8rem;">Data Agendada</label>
               <input type="date" id="task-date" class="form-input" required>
             </div>
-            <div class="form-group" style="margin: 0; grid-column: span 3; display: flex; justify-content: flex-end;">
-              <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Agendar</button>
+            <div style="grid-column: span 3; display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 5px;">
+              <button type="button" class="btn btn-secondary" id="task-form-cancel" style="display: none;" onclick="TaskApp.cancelEdit()">Cancelar</button>
+              <button type="submit" class="btn btn-primary" id="task-form-btn"><i class="fa-solid fa-plus"></i> Agendar</button>
             </div>
           </form>
         </div>
@@ -4464,6 +4468,41 @@
         select.value = currentVal;
       },
 
+      editTask(id) {
+        const task = this.tasks.find(t => String(t.id) === String(id));
+        if (!task) return;
+        
+        document.getElementById('task-form-id').value = task.id;
+        document.getElementById('task-client-id').value = task.clientId || '';
+        document.getElementById('task-desc').value = task.description || '';
+        document.getElementById('task-date').value = task.date || '';
+        
+        document.getElementById('task-form-btn').innerHTML = '<i class="fa-solid fa-check"></i> Atualizar';
+        document.getElementById('task-form-btn').classList.remove('btn-primary');
+        document.getElementById('task-form-btn').classList.add('btn-purple');
+        document.getElementById('task-form-cancel').style.display = 'inline-block';
+        
+        // Scroll to form and highlight
+        const modalBody = document.querySelector('#agenda-modal .modal-body');
+        if (modalBody) modalBody.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        const formContainer = document.getElementById('task-form').parentElement;
+        formContainer.style.transition = 'box-shadow 0.3s';
+        formContainer.style.boxShadow = '0 0 0 2px #a855f7';
+        setTimeout(() => { formContainer.style.boxShadow = 'none'; }, 1500);
+        
+        document.getElementById('task-desc').focus();
+      },
+      
+      cancelEdit() {
+        document.getElementById('task-form').reset();
+        document.getElementById('task-form-id').value = '';
+        document.getElementById('task-form-btn').innerHTML = '<i class="fa-solid fa-plus"></i> Agendar';
+        document.getElementById('task-form-btn').classList.remove('btn-purple');
+        document.getElementById('task-form-btn').classList.add('btn-primary');
+        document.getElementById('task-form-cancel').style.display = 'none';
+      },
+
       save(event) {
         event.preventDefault();
         const clientId = document.getElementById('task-client-id').value;
@@ -4472,21 +4511,34 @@
 
         if (!desc || !date) return;
 
-        const newTask = {
-          id: Date.now().toString(),
-          clientId,
-          description: desc,
-          date, // YYYY-MM-DD
-          completed: false,
-          createdAt: new Date().toISOString()
-        };
-
-        this.tasks.push(newTask);
-        this.saveToStorage();
-        FirebaseEngine.syncTask(newTask);
+        const taskId = document.getElementById('task-form-id').value;
         
-        event.target.reset();
-        showToast('Tarefa / Visita agendada!', 'success');
+        if (taskId) {
+           const task = this.tasks.find(t => String(t.id) === String(taskId));
+           if (task) {
+             task.clientId = clientId;
+             task.description = desc;
+             task.date = date;
+             this.saveToStorage();
+             FirebaseEngine.syncTask(task);
+             showToast('Tarefa atualizada!', 'success');
+           }
+        } else {
+           const newTask = {
+             id: Date.now().toString(),
+             clientId,
+             description: desc,
+             date,
+             completed: false,
+             createdAt: new Date().toISOString()
+           };
+           this.tasks.push(newTask);
+           this.saveToStorage();
+           FirebaseEngine.syncTask(newTask);
+           showToast('Tarefa / Visita agendada!', 'success');
+        }
+        
+        this.cancelEdit();
         this.render();
       },
 
@@ -4571,19 +4623,22 @@
           let isOverdue = new Date(t.date).getTime() < todayTime && t.date !== todayStr;
           
           return `
-            <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); ${isOverdue ? 'border-left: 4px solid #ef4444;' : 'border-left: 4px solid #3b82f6;'}">
+            <div style="background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); ${isOverdue ? 'border-left: 4px solid #ef4444;' : 'border-left: 4px solid #3b82f6;'}">
               <div style="display: flex; align-items: center; gap: 15px; flex: 1;">
                 <input type="checkbox" style="width: 20px; height: 20px; cursor: pointer; accent-color: #3b82f6; -webkit-appearance: auto; appearance: auto;" onchange="TaskApp.toggleComplete('${t.id}')" ${t.completed ? 'checked' : ''}>
                 <div>
-                  <div style="font-weight: 600; color: #0f172a;">${t.description}</div>
+                  <div style="font-weight: 600; color: #f8fafc;">${t.description}</div>
                   ${clientHtml}
                   <div style="font-size: 0.75rem; font-weight: 600; margin-top: 4px; ${isOverdue ? 'color: #ef4444;' : 'color: #3b82f6;'}">
                     <i class="fa-regular fa-calendar"></i> ${displayDate} ${isOverdue ? '(Atrasada)' : ''}
                   </div>
                 </div>
               </div>
-              <div>
-                <button class="btn btn-secondary btn-icon-only" style="color: #ef4444; border: none; background: transparent; box-shadow: none;" onclick="TaskApp.deleteTask('${t.id}')">
+              <div style="display: flex; gap: 5px;">
+                <button class="btn btn-secondary btn-icon-only" style="color: #3b82f6; border: none; background: transparent; box-shadow: none;" onclick="TaskApp.editTask('${t.id}')" title="Editar">
+                  <i class="fa-solid fa-pen"></i>
+                </button>
+                <button class="btn btn-secondary btn-icon-only" style="color: #ef4444; border: none; background: transparent; box-shadow: none;" onclick="TaskApp.deleteTask('${t.id}')" title="Excluir">
                   <i class="fa-regular fa-trash-can"></i>
                 </button>
               </div>
