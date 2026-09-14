@@ -1032,6 +1032,10 @@
           <i class="fa-solid fa-plus"></i> Novo Pedido
         </button>
 
+        <button class="btn btn-secondary btn-icon-only" onclick="FirebaseEngine.forceFullSync()" title="Forçar Sincronização Manual com a Nuvem">
+          <i class="fa-solid fa-rotate"></i>
+        </button>
+
         <button class="btn btn-secondary btn-icon-only" onclick="ModalEngine.open('firebase-modal')" title="Configurações do Firebase">
           <i class="fa-solid fa-gear"></i>
         </button>
@@ -4137,6 +4141,23 @@
         this.updateStats();
 
         showToast(`Sincronização concluída! ${syncedO} pedidos e ${syncedC} clientes unificados do ambiente oposto.`, 'success');
+      },
+
+      async forceFullSync() {
+        if (!this.db) {
+          showToast('A Nuvem não está conectada. Verifique as configurações!', 'error');
+          return;
+        }
+        showToast('Enviando e validando dados com a nuvem...', 'info');
+        try {
+          let count = 0;
+          for (const o of OrderApp.orders) { await this.syncOrder(o); count++; }
+          for (const c of ClientApp.clients) { await this.syncClient(c); count++; }
+          showToast(`Sincronização forçada concluída com sucesso! (${count} registros checados)`, 'success');
+        } catch (e) {
+          console.error(e);
+          showToast('Erro ao forçar sincronização. Verifique sua conexão.', 'error');
+        }
       }
     };
 
