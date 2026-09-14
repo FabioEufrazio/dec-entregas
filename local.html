@@ -1409,7 +1409,6 @@
         <!-- Formulário Rápido de Tarefa -->
         <div style="background: #1e293b; border: 1px solid #334155; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
           <form id="task-form" onsubmit="TaskApp.save(event)" style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end;">
-            <input type="hidden" id="task-form-id">
             <div class="form-group" style="margin: 0;">
               <label class="form-label" style="font-size: 0.8rem;">Cliente (Opcional)</label>
               <select id="task-client-id" class="form-input">
@@ -1424,9 +1423,8 @@
               <label class="form-label" style="font-size: 0.8rem;">Data Agendada</label>
               <input type="date" id="task-date" class="form-input" required>
             </div>
-            <div style="grid-column: span 3; display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 5px;">
-              <button type="button" class="btn btn-secondary" id="task-form-cancel" style="display: none;" onclick="TaskApp.cancelEdit()">Cancelar</button>
-              <button type="submit" class="btn btn-primary" id="task-form-btn"><i class="fa-solid fa-plus"></i> Agendar</button>
+            <div class="form-group" style="margin: 0; grid-column: span 3; display: flex; justify-content: flex-end;">
+              <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Agendar</button>
             </div>
           </form>
         </div>
@@ -1472,6 +1470,47 @@
           <button class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1rem; font-weight: bold; background: #3b28cc; border: none; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); text-transform: uppercase;" onclick="MapEngine.confirmLocation(event)">
             PRONTO
           </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL 3B: EDITAR TAREFA
+       ========================================================================== -->
+  <div class="modal-overlay" id="edit-task-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2><i class="fa-solid fa-pen" style="color: #a855f7;"></i> Editar Tarefa</h2>
+        <button class="btn btn-secondary btn-icon-only" onclick="TaskApp.cancelEdit()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div style="background: #1e293b; border: 1px solid #334155; padding: 15px; border-radius: 8px;">
+          <form id="edit-task-form" onsubmit="TaskApp.saveEdit(event)" style="display: grid; grid-template-columns: 1fr; gap: 15px;">
+            <input type="hidden" id="edit-task-form-id">
+            
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" style="font-size: 0.85rem; color: #94a3b8;">Cliente (Opcional)</label>
+              <select id="edit-task-client-id" class="form-input">
+                <option value="">Selecione um cliente...</option>
+              </select>
+            </div>
+            
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" style="font-size: 0.85rem; color: #94a3b8;">Descrição da Tarefa / Visita</label>
+              <input type="text" id="edit-task-desc" class="form-input" placeholder="Ex: Visita de cobrança" required>
+            </div>
+            
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" style="font-size: 0.85rem; color: #94a3b8;">Data Agendada</label>
+              <input type="date" id="edit-task-date" class="form-input" required>
+            </div>
+            
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+              <button type="button" class="btn btn-secondary" onclick="TaskApp.cancelEdit()">Cancelar</button>
+              <button type="submit" class="btn btn-purple"><i class="fa-solid fa-check"></i> Atualizar</button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
@@ -4460,58 +4499,53 @@
       },
 
       populateClientSelect() {
-        const select = document.getElementById('task-client-id');
-        if (!select) return;
-        const currentVal = select.value;
-        select.innerHTML = '<option value="">Selecione um cliente...</option>' + 
+        const optionsHTML = '<option value="">Selecione um cliente...</option>' + 
           ClientApp.clients.map(c => `<option value="${c.id}">${c.nomeFantasia}</option>`).join('');
-        select.value = currentVal;
+          
+        const select = document.getElementById('task-client-id');
+        if (select) {
+          const currentVal = select.value;
+          select.innerHTML = optionsHTML;
+          select.value = currentVal;
+        }
+
+        const editSelect = document.getElementById('edit-task-client-id');
+        if (editSelect) {
+          const editCurrentVal = editSelect.value;
+          editSelect.innerHTML = optionsHTML;
+          editSelect.value = editCurrentVal;
+        }
       },
 
       editTask(id) {
         const task = this.tasks.find(t => String(t.id) === String(id));
         if (!task) return;
         
-        document.getElementById('task-form-id').value = task.id;
-        document.getElementById('task-client-id').value = task.clientId || '';
-        document.getElementById('task-desc').value = task.description || '';
-        document.getElementById('task-date').value = task.date || '';
+        document.getElementById('edit-task-form-id').value = task.id;
+        document.getElementById('edit-task-client-id').value = task.clientId || '';
+        document.getElementById('edit-task-desc').value = task.description || '';
+        document.getElementById('edit-task-date').value = task.date || '';
         
-        document.getElementById('task-form-btn').innerHTML = '<i class="fa-solid fa-check"></i> Atualizar';
-        document.getElementById('task-form-btn').classList.remove('btn-primary');
-        document.getElementById('task-form-btn').classList.add('btn-purple');
-        document.getElementById('task-form-cancel').style.display = 'inline-block';
-        
-        // Scroll to form and highlight
-        const modalBody = document.querySelector('#agenda-modal .modal-body');
-        if (modalBody) modalBody.scrollTo({ top: 0, behavior: 'smooth' });
-        
-        const formContainer = document.getElementById('task-form').parentElement;
-        formContainer.style.transition = 'box-shadow 0.3s';
-        formContainer.style.boxShadow = '0 0 0 2px #a855f7';
-        setTimeout(() => { formContainer.style.boxShadow = 'none'; }, 1500);
-        
-        document.getElementById('task-desc').focus();
+        ModalEngine.close('agenda-modal');
+        ModalEngine.open('edit-task-modal');
       },
       
       cancelEdit() {
-        document.getElementById('task-form').reset();
-        document.getElementById('task-form-id').value = '';
-        document.getElementById('task-form-btn').innerHTML = '<i class="fa-solid fa-plus"></i> Agendar';
-        document.getElementById('task-form-btn').classList.remove('btn-purple');
-        document.getElementById('task-form-btn').classList.add('btn-primary');
-        document.getElementById('task-form-cancel').style.display = 'none';
+        document.getElementById('edit-task-form').reset();
+        document.getElementById('edit-task-form-id').value = '';
+        ModalEngine.close('edit-task-modal');
+        ModalEngine.open('agenda-modal');
       },
 
-      save(event) {
+      saveEdit(event) {
         event.preventDefault();
-        const clientId = document.getElementById('task-client-id').value;
-        const desc = document.getElementById('task-desc').value.trim();
-        const date = document.getElementById('task-date').value;
+        const clientId = document.getElementById('edit-task-client-id').value;
+        const desc = document.getElementById('edit-task-desc').value.trim();
+        const date = document.getElementById('edit-task-date').value;
 
         if (!desc || !date) return;
 
-        const taskId = document.getElementById('task-form-id').value;
+        const taskId = document.getElementById('edit-task-form-id').value;
         
         if (taskId) {
            const task = this.tasks.find(t => String(t.id) === String(taskId));
@@ -4523,22 +4557,34 @@
              FirebaseEngine.syncTask(task);
              showToast('Tarefa atualizada!', 'success');
            }
-        } else {
-           const newTask = {
-             id: Date.now().toString(),
-             clientId,
-             description: desc,
-             date,
-             completed: false,
-             createdAt: new Date().toISOString()
-           };
-           this.tasks.push(newTask);
-           this.saveToStorage();
-           FirebaseEngine.syncTask(newTask);
-           showToast('Tarefa / Visita agendada!', 'success');
         }
         
         this.cancelEdit();
+        this.render();
+      },
+
+      save(event) {
+        event.preventDefault();
+        const clientId = document.getElementById('task-client-id').value;
+        const desc = document.getElementById('task-desc').value.trim();
+        const date = document.getElementById('task-date').value;
+
+        if (!desc || !date) return;
+
+        const newTask = {
+          id: Date.now().toString(),
+          clientId,
+          description: desc,
+          date, // YYYY-MM-DD
+          completed: false,
+          createdAt: new Date().toISOString()
+        };
+        this.tasks.push(newTask);
+        this.saveToStorage();
+        FirebaseEngine.syncTask(newTask);
+        
+        event.target.reset();
+        showToast('Tarefa / Visita agendada!', 'success');
         this.render();
       },
 
