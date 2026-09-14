@@ -2,23 +2,23 @@ const fs = require('fs');
 const path = require('path');
 
 const prodPath = path.join(__dirname, 'index.html');
-const homologPath = path.join(__dirname, 'homolog.html');
+const localPath = path.join(__dirname, 'local.html');
 
 let content = fs.readFileSync(prodPath, 'utf8');
 
 // 1. Altera Título
 content = content.replace(
   '<title>DEC Entregas & Gestão de Clientes</title>',
-  '<title>[HOMOLOG] DEC Entregas & Clientes (Ambiente de Testes)</title>'
+  '<title>[LOCAL] DEC Entregas & Clientes (Ambiente de Testes)</title>'
 );
 
 // 2. Insere Banner de Homologação no topo do <body>
 const bannerHtml = `
-  <!-- BANNER EXCLUSIVO DO AMBIENTE DE HOMOLOGAÇÃO -->
-  <div id="staging-top-banner" style="background: linear-gradient(90deg, #d97706, #b45309); color: #ffffff; padding: 0.5rem 1.25rem; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 2px solid #f59e0b; box-shadow: 0 4px 12px rgba(0,0,0,0.4); position: sticky; top: 0; z-index: 10000;">
+  <!-- BANNER EXCLUSIVO DO AMBIENTE LOCAL -->
+  <div id="staging-top-banner" style="background: linear-gradient(90deg, #047857, #065f46); color: #ffffff; padding: 0.5rem 1.25rem; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 2px solid #10b981; box-shadow: 0 4px 12px rgba(0,0,0,0.4); position: sticky; top: 0; z-index: 10000;">
     <div style="display: flex; align-items: center; gap: 0.6rem;">
-      <span style="background: #ffffff; color: #b45309; padding: 2px 8px; border-radius: 4px; font-weight: 800; font-size: 0.75rem; letter-spacing: 0.5px;">HOMOLOGAÇÃO</span>
-      <span>🧪 Ambiente de Testes & Experimentação (Dados 100% Isolados da Produção)</span>
+      <span style="background: #ffffff; color: #065f46; padding: 2px 8px; border-radius: 4px; font-weight: 800; font-size: 0.75rem; letter-spacing: 0.5px;">LOCAL / TESTES</span>
+      <span>📱 Ambiente de Testes & Desenvolvimento (Dados Isolados)</span>
     </div>
     <div style="display: flex; align-items: center; gap: 0.75rem;">
       <span style="font-size: 0.78rem; opacity: 0.9; background: rgba(0,0,0,0.25); padding: 3px 8px; border-radius: 4px;">
@@ -33,14 +33,14 @@ content = content.replace('<body>', '<body>' + bannerHtml);
 // 3. Modifica Header Brand Title estático
 content = content.replace(
   '<h1 id="app-title-text">DEC Entregas & Gestão',
-  '<h1 id="app-title-text">DEC Entregas [HOMOLOG]'
+  '<h1 id="app-title-text">DEC Entregas [LOCAL]'
 );
 
 // 4. Modifica APP_ENV para Staging
 const prodEnvRegex = /const APP_ENV = \{[\s\S]*?configStorageKey: 'tracklog_firebase_config'\s*\};/;
 const stagingEnv = `const APP_ENV = {
-      env: 'staging',
-      name: 'Homologação',
+      env: 'local',
+      name: 'Local',
       isStaging: true,
       ordersCollection: 'orders_staging',
       clientsCollection: 'clients_staging',
@@ -51,5 +51,5 @@ const stagingEnv = `const APP_ENV = {
 
 content = content.replace(prodEnvRegex, stagingEnv);
 
-fs.writeFileSync(homologPath, content, 'utf8');
-console.log('entregas_homolog.html gerado com sucesso! Tamanho:', fs.statSync(homologPath).size, 'bytes.');
+fs.writeFileSync(localPath, content, 'utf8');
+console.log('local.html gerado com sucesso! Tamanho:', fs.statSync(localPath).size, 'bytes.');

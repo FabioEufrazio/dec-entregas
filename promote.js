@@ -1,26 +1,26 @@
 const fs = require('fs');
 const path = require('path');
 
-const homologPath = path.join(__dirname, 'homolog.html');
+const localPath = path.join(__dirname, 'local.html');
 const prodPath = path.join(__dirname, 'index.html');
 
-if (!fs.existsSync(homologPath)) {
-  console.error('ERRO: homolog.html não encontrado!');
+if (!fs.existsSync(localPath)) {
+  console.error('ERRO: local.html não encontrado!');
   process.exit(1);
 }
 
-let content = fs.readFileSync(homologPath, 'utf8');
+let content = fs.readFileSync(localPath, 'utf8');
 
 content = content.replace(
-  '<title>[HOMOLOG] DEC Entregas & Clientes (Ambiente de Testes)</title>',
+  '<title>[LOCAL] DEC Entregas & Clientes (Ambiente de Testes)</title>',
   '<title>DEC Entregas & Gestão de Clientes</title>'
 );
 
-const bannerRegex = /\s*<!-- BANNER EXCLUSIVO DO AMBIENTE DE HOMOLOGAÇÃO -->[\s\S]*?(?=<!-- HEADER PRINCIPAL -->)/i;
+const bannerRegex = /\s*<!-- BANNER EXCLUSIVO DO AMBIENTE LOCAL -->[\s\S]*?(?=<!-- HEADER PRINCIPAL -->)/i;
 content = content.replace(bannerRegex, '\n\n  ');
 
 content = content.replace(
-  /<h1 id="app-title-text">DEC Entregas \[HOMOLOG\][\s\S]*?<\/h1>/i,
+  /<h1 id="app-title-text">DEC Entregas \[LOCAL\][\s\S]*?<\/h1>/i,
   '<h1 id="app-title-text">DEC Entregas & Gestão Logística</h1>'
 );
 
@@ -39,4 +39,4 @@ const prodEnv = `const APP_ENV = {
 content = content.replace(stagingEnvRegex, prodEnv);
 
 fs.writeFileSync(prodPath, content, 'utf8');
-console.log('✅ Sucesso! homolog.html promovido para index.html (Produção)!');
+console.log('✅ Sucesso! local.html promovido para index.html (Produção)!');

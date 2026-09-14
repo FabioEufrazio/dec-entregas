@@ -897,6 +897,71 @@
         font-size: 0.75rem;
       }
     }
+    /* ==========================================================================
+       10. MOBILE RESPONSIVENESS
+       ========================================================================== */
+    @media (max-width: 768px) {
+      .header-container {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .header-right {
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .modal-card {
+        width: 100% !important;
+        height: 100% !important;
+        max-width: none !important;
+        max-height: none !important;
+        border-radius: 0 !important;
+        border: none !important;
+        margin: 0 !important;
+      }
+      .modal-overlay {
+        padding: 0 !important;
+      }
+      .form-row, 
+      #client-form > div {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 0.85rem !important;
+      }
+      .filters-bar {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        padding-bottom: 5px;
+        -webkit-overflow-scrolling: touch;
+      }
+      .filter-pill {
+        white-space: nowrap;
+      }
+      .kanban-board {
+        grid-template-columns: 1fr !important;
+      }
+      .orders-table th, .orders-table td {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.82rem;
+      }
+      #clients-actions-bar {
+        flex-direction: column;
+        align-items: stretch !important;
+      }
+      #clients-actions-bar .search-input-wrapper {
+        max-width: 100% !important;
+      }
+      #clients-actions-bar > div:last-child {
+        justify-content: space-between;
+      }
+      #clients-actions-bar button, #clients-actions-bar label {
+        flex: 1;
+        justify-content: center;
+        text-align: center;
+      }
+      .dashboard-grid {
+        grid-template-columns: 1fr 1fr !important;
+      }
+    }
   </style>
 </head>
 
@@ -4135,53 +4200,69 @@
       listenToCloud() {
         if (!this.db) return;
         
-        // Ouve Pedidos (Mesclando para não apagar dados criados localmente)
+        // Ouve Pedidos (Sincronização Bidirecional Real-Time Completa)
         this.db.collection(APP_ENV.ordersCollection).onSnapshot(snap => {
-          if (!snap.empty) {
-            const cloudList = [];
-            snap.forEach(doc => {
-              const data = doc.data();
-              if (data && data.id) cloudList.push(data);
-            });
-            if (cloudList.length > 0) {
-              const map = new Map();
-              OrderApp.orders.forEach(o => map.set(String(o.id), o));
-              cloudList.forEach(o => map.set(String(o.id), o));
-
-              const mergedList = Array.from(map.values());
-              const oldJson = JSON.stringify(OrderApp.orders);
-              const newJson = JSON.stringify(mergedList);
-              if (oldJson !== newJson) {
-                OrderApp.orders = mergedList;
-                OrderApp.saveLocally();
-                OrderApp.render();
+          let changed = false;
+          snap.docChanges().forEach(change => {
+            const data = change.doc.data();
+            const id = String(data.id || change.doc.id);
+            
+            if (change.type === 'added' || change.type === 'modified') {
+              const idx = OrderApp.orders.findIndex(o => String(o.id) === id);
+              if (idx >= 0) {
+                if (JSON.stringify(OrderApp.orders[idx]) !== JSON.stringify(data)) {
+                  OrderApp.orders[idx] = data;
+                  changed = true;
+                }
+              } else {
+                OrderApp.orders.push(data);
+                changed = true;
               }
             }
+            if (change.type === 'removed') {
+              const idx = OrderApp.orders.findIndex(o => String(o.id) === id);
+              if (idx >= 0) {
+                OrderApp.orders.splice(idx, 1);
+                changed = true;
+              }
+            }
+          });
+          if (changed) {
+            OrderApp.saveLocally();
+            OrderApp.render();
           }
         }, err => console.log("Erro escuta pedidos", err));
 
-        // Ouve Clientes (Mesclando para não apagar dados criados localmente)
+        // Ouve Clientes (Sincronização Bidirecional Real-Time Completa)
         this.db.collection(APP_ENV.clientsCollection).onSnapshot(snap => {
-          if (!snap.empty) {
-            const cloudList = [];
-            snap.forEach(doc => {
-              const data = doc.data();
-              if (data && data.id) cloudList.push(data);
-            });
-            if (cloudList.length > 0) {
-              const map = new Map();
-              ClientApp.clients.forEach(c => map.set(String(c.id), c));
-              cloudList.forEach(c => map.set(String(c.id), c));
-
-              const mergedList = Array.from(map.values());
-              const oldJson = JSON.stringify(ClientApp.clients);
-              const newJson = JSON.stringify(mergedList);
-              if (oldJson !== newJson) {
-                ClientApp.clients = mergedList;
-                ClientApp.saveLocally();
-                ClientApp.render();
+          let changed = false;
+          snap.docChanges().forEach(change => {
+            const data = change.doc.data();
+            const id = String(data.id || change.doc.id);
+            
+            if (change.type === 'added' || change.type === 'modified') {
+              const idx = ClientApp.clients.findIndex(c => String(c.id) === id);
+              if (idx >= 0) {
+                if (JSON.stringify(ClientApp.clients[idx]) !== JSON.stringify(data)) {
+                  ClientApp.clients[idx] = data;
+                  changed = true;
+                }
+              } else {
+                ClientApp.clients.push(data);
+                changed = true;
               }
             }
+            if (change.type === 'removed') {
+              const idx = ClientApp.clients.findIndex(c => String(c.id) === id);
+              if (idx >= 0) {
+                ClientApp.clients.splice(idx, 1);
+                changed = true;
+              }
+            }
+          });
+          if (changed) {
+            ClientApp.saveLocally();
+            ClientApp.render();
           }
         }, err => console.log("Erro escuta clientes", err));
       },
