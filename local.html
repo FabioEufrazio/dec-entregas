@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <title>[LOCAL] DEC Entregas & Clientes (Ambiente de Testes)</title>
+  <title>DEC Entregas & Gestão de Clientes</title>
   
   <!-- Fontes Google & FontAwesome -->
   <link rel="preconnect" href="https://fonts.gstatic.com">
@@ -1016,20 +1016,6 @@
 </head>
 
 <body>
-  <!-- BANNER EXCLUSIVO DO AMBIENTE LOCAL -->
-  <div id="staging-top-banner" style="background: linear-gradient(90deg, #047857, #065f46); color: #ffffff; padding: 0.5rem 1.25rem; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 2px solid #10b981; box-shadow: 0 4px 12px rgba(0,0,0,0.4); position: sticky; top: 0; z-index: 10000;">
-    <div style="display: flex; align-items: center; gap: 0.6rem;">
-      <span style="background: #ffffff; color: #065f46; padding: 2px 8px; border-radius: 4px; font-weight: 800; font-size: 0.75rem; letter-spacing: 0.5px;">LOCAL / TESTES</span>
-      <span>📱 Ambiente de Testes & Desenvolvimento (Dados Isolados)</span>
-    </div>
-    <div style="display: flex; align-items: center; gap: 0.75rem;">
-      <span style="font-size: 0.78rem; opacity: 0.9; background: rgba(0,0,0,0.25); padding: 3px 8px; border-radius: 4px;">
-        <i class="fa-solid fa-database"></i> Firestore: <code>orders_staging</code> & <code>clients_staging</code>
-      </span>
-      <a href="index.html" style="color: #fff; text-decoration: underline; font-size: 0.78rem; font-weight: bold;">Ir para Produção →</a>
-    </div>
-  </div>
-
 
   <!-- HEADER PRINCIPAL -->
   <header>
@@ -1039,7 +1025,7 @@
           <i class="fa-solid fa-truck-fast"></i>
         </div>
         <div class="brand-text">
-          <h1 id="app-title-text">DEC Entregas [LOCAL] Logística</h1>
+          <h1 id="app-title-text">DEC Entregas & Gestão Logística</h1>
         </div>
       </div>
 
@@ -1431,6 +1417,10 @@
               <label class="form-label" style="font-size: 0.8rem;">Data Agendada</label>
               <input type="date" id="task-date" class="form-input" required>
             </div>
+            <div class="form-group" style="margin: 0; grid-column: span 3;">
+              <label class="form-label" style="font-size: 0.8rem;">Observações / Anotações <span style="color: var(--text-muted); font-weight: 400;">(Opcional)</span></label>
+              <textarea id="task-observation" class="form-input" rows="2" placeholder="Anote detalhes, resultados da visita, acordos, etc..." style="resize: vertical; min-height: 60px;"></textarea>
+            </div>
             <div class="form-group" style="margin: 0; grid-column: span 3; display: flex; justify-content: flex-end;">
               <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Agendar</button>
             </div>
@@ -1520,6 +1510,11 @@
             <div class="form-group" style="margin: 0;">
               <label class="form-label" style="font-size: 0.85rem; color: #94a3b8;">Data Agendada</label>
               <input type="date" id="edit-task-date" class="form-input" required>
+            </div>
+
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" style="font-size: 0.85rem; color: #94a3b8;">Observações / Anotações <span style="color: var(--text-muted); font-weight: 400;">(Opcional)</span></label>
+              <textarea id="edit-task-observation" class="form-input" rows="3" placeholder="Anote detalhes, resultados da visita, acordos, etc..." style="resize: vertical; min-height: 70px;"></textarea>
             </div>
             
             <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
@@ -1696,36 +1691,53 @@
   </div>
 
   <!-- ==========================================================================
-       MODAL 5: HISTÓRICO DE PEDIDOS DO CLIENTE ESPECÍFICO
+       MODAL 5: PAINEL DO CLIENTE (PEDIDOS + TAREFAS / HISTÓRICO)
        ========================================================================== -->
   <div class="modal-overlay" id="client-orders-history-modal">
     <div class="modal-card modal-lg">
       <div class="modal-header">
-        <h2 id="client-orders-modal-title"><i class="fa-solid fa-clock-rotate-left"></i> Histórico de Pedidos do Cliente</h2>
+        <h2 id="client-orders-modal-title"><i class="fa-solid fa-clock-rotate-left"></i> Painel do Cliente</h2>
         <button class="modal-close-btn" onclick="ModalEngine.close('client-orders-history-modal')"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
       <div class="modal-body">
-        <div id="client-orders-summary-box" style="background: var(--bg-input); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border); font-size: 0.82rem;">
+        <!-- Resumo do cliente -->
+        <div id="client-orders-summary-box" style="background: var(--bg-input); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border); font-size: 0.82rem; margin-bottom: 1rem;">
           <!-- Resumo -->
         </div>
 
-        <div class="table-responsive-container" style="max-height: 360px; margin-top: 0.5rem;">
-          <table class="orders-table">
-            <thead>
-              <tr>
-                <th>Data</th>
-                <th>Nº Pedidos</th>
-                <th>Transportadora</th>
-                <th>Valor Total</th>
-                <th>Status</th>
-                <th>Tempo Total</th>
-              </tr>
-            </thead>
-            <tbody id="client-orders-table-body">
-              <!-- Linhas de histórico -->
-            </tbody>
-          </table>
+        <!-- Abas -->
+        <div style="display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 1rem;">
+          <button id="tab-btn-orders" onclick="ClientApp.switchTab('orders')" style="padding: 0.6rem 1.2rem; background: transparent; border: none; border-bottom: 2px solid var(--accent-amber); color: var(--accent-amber); cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s;"><i class="fa-solid fa-boxes-stacked"></i> Pedidos</button>
+          <button id="tab-btn-tasks" onclick="ClientApp.switchTab('tasks')" style="padding: 0.6rem 1.2rem; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s;"><i class="fa-solid fa-calendar-check"></i> Agenda / Histórico</button>
+        </div>
+
+        <!-- Painel: Pedidos -->
+        <div id="tab-panel-orders">
+          <div class="table-responsive-container" style="max-height: 360px;">
+            <table class="orders-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Nº Pedidos</th>
+                  <th>Transportadora</th>
+                  <th>Valor Total</th>
+                  <th>Status</th>
+                  <th>Tempo Total</th>
+                </tr>
+              </thead>
+              <tbody id="client-orders-table-body">
+                <!-- Linhas de histórico -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Painel: Tarefas / Agenda -->
+        <div id="tab-panel-tasks" style="display: none;">
+          <div id="client-tasks-list" style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 380px; overflow-y: auto; padding-right: 4px;">
+            <!-- Tarefas renderizadas via JS -->
+          </div>
         </div>
       </div>
 
@@ -1912,7 +1924,7 @@
     const APP_ENV = {
       env: 'local',
       name: 'Local',
-      isStaging: true,
+      isStaging: false,
       ordersCollection: 'orders_staging',
       clientsCollection: 'clients_staging',
       tasksCollection: 'tasks_staging',
@@ -2654,6 +2666,24 @@
             </tr>
           `;
         }).join('');
+      },
+
+      switchTab(tab) {
+        const ordersPanel = document.getElementById('tab-panel-orders');
+        const tasksPanel = document.getElementById('tab-panel-tasks');
+        const ordersBtn = document.getElementById('tab-btn-orders');
+        const tasksBtn = document.getElementById('tab-btn-tasks');
+        if (tab === 'orders') {
+          if(ordersPanel) ordersPanel.style.display = '';
+          if(tasksPanel) tasksPanel.style.display = 'none';
+          if(ordersBtn){ ordersBtn.style.borderBottomColor = 'var(--accent-amber)'; ordersBtn.style.color = 'var(--accent-amber)'; }
+          if(tasksBtn){ tasksBtn.style.borderBottomColor = 'transparent'; tasksBtn.style.color = 'var(--text-muted)'; }
+        } else {
+          if(ordersPanel) ordersPanel.style.display = 'none';
+          if(tasksPanel) tasksPanel.style.display = '';
+          if(tasksBtn){ tasksBtn.style.borderBottomColor = 'var(--accent-purple)'; tasksBtn.style.color = 'var(--accent-purple)'; }
+          if(ordersBtn){ ordersBtn.style.borderBottomColor = 'transparent'; ordersBtn.style.color = 'var(--text-muted)'; }
+        }
       },
 
       viewOrdersHistory(clientId) {
@@ -4591,6 +4621,8 @@
         document.getElementById('edit-task-client-id').value = task.clientId || '';
         document.getElementById('edit-task-desc').value = task.description || '';
         document.getElementById('edit-task-date').value = task.date || '';
+        const editObsEl = document.getElementById('edit-task-observation');
+        if (editObsEl) editObsEl.value = task.observation || '';
         
         // Populando campo de busca para o modal de edição
         if (task.clientId) {
@@ -4625,6 +4657,8 @@
         const clientId = document.getElementById('edit-task-client-id').value;
         const desc = document.getElementById('edit-task-desc').value.trim();
         const date = document.getElementById('edit-task-date').value;
+        const editObsEl2 = document.getElementById('edit-task-observation');
+        const observation = editObsEl2 ? editObsEl2.value.trim() : '';
 
         if (!desc || !date) return;
 
@@ -4636,6 +4670,8 @@
              task.clientId = clientId;
              task.description = desc;
              task.date = date;
+             task.observation = observation;
+             task.updatedAt = new Date().toISOString();
              this.saveToStorage();
              FirebaseEngine.syncTask(task);
              showToast('Tarefa atualizada!', 'success');
@@ -4651,6 +4687,8 @@
         const clientId = document.getElementById('task-client-id').value;
         const desc = document.getElementById('task-desc').value.trim();
         const date = document.getElementById('task-date').value;
+        const taskObsEl = document.getElementById('task-observation');
+        const observation = taskObsEl ? taskObsEl.value.trim() : '';
 
         if (!desc || !date) return;
 
@@ -4659,6 +4697,7 @@
           clientId,
           description: desc,
           date, // YYYY-MM-DD
+          observation,
           completed: false,
           createdAt: new Date().toISOString()
         };
