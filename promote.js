@@ -31,8 +31,10 @@ const prodEnv = `const APP_ENV = {
       isStaging: false,
       ordersCollection: 'orders',
       clientsCollection: 'clients',
+      tasksCollection: 'tasks',
       ordersStorageKey: 'decentregas_orders_v1',
       clientsStorageKey: 'decentregas_clients_v1',
+      tasksStorageKey: 'decentregas_tasks_v1',
       configStorageKey: 'decentregas_firebase_config'
     };`;
 

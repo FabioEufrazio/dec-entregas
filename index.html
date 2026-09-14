@@ -1004,6 +1004,9 @@
         </span>
 
         <!-- Botões de Ação Rápida -->
+        <button class="btn btn-primary" style="background-color: #3b82f6; border-color: #3b82f6;" onclick="ModalEngine.open('agenda-modal')">
+          <i class="fa-solid fa-calendar-check"></i> Agenda <span class="badge-count" id="header-tasks-count" style="background: white; color: #3b82f6;">0</span>
+        </button>
         <button class="btn btn-purple" onclick="ModalEngine.open('clients-modal')">
           <i class="fa-solid fa-users"></i> Clientes <span class="badge-count" id="header-clients-count">0</span>
         </button>
@@ -1338,6 +1341,57 @@
   </div>
 
   <!-- ==========================================================================
+       MODAL AGENDA DE TAREFAS / VISITAS
+       ========================================================================== -->
+  <div class="modal-overlay" id="agenda-modal">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <h2><i class="fa-solid fa-calendar-check" style="color: #3b82f6;"></i> Agenda de Visitas e Tarefas</h2>
+        <button class="btn btn-secondary btn-icon-only" onclick="ModalEngine.close('agenda-modal')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      
+      <!-- Abas de Filtro -->
+      <div class="tabs-container">
+        <div class="tab active" onclick="TaskApp.setFilter('hoje', this)">Hoje</div>
+        <div class="tab" onclick="TaskApp.setFilter('semana', this)">Esta Semana</div>
+        <div class="tab" onclick="TaskApp.setFilter('proxima', this)">Próxima Semana</div>
+        <div class="tab" onclick="TaskApp.setFilter('todas', this)">Todas</div>
+        <div class="tab" onclick="TaskApp.setFilter('concluidas', this)">Concluídas</div>
+      </div>
+
+      <div class="modal-body">
+        <!-- Formulário Rápido de Tarefa -->
+        <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+          <form id="task-form" onsubmit="TaskApp.save(event)" style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end;">
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" style="font-size: 0.8rem;">Cliente (Opcional)</label>
+              <select id="task-client-id" class="form-input">
+                <option value="">Selecione um cliente...</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" style="font-size: 0.8rem;">Descrição da Tarefa / Visita</label>
+              <input type="text" id="task-desc" class="form-input" placeholder="Ex: Visita de cobrança" required>
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" style="font-size: 0.8rem;">Data Agendada</label>
+              <input type="date" id="task-date" class="form-input" required>
+            </div>
+            <div class="form-group" style="margin: 0; grid-column: span 3; display: flex; justify-content: flex-end;">
+              <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Agendar</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Lista de Tarefas -->
+        <div id="tasks-list-container" style="display: flex; flex-direction: column; gap: 10px;">
+          <!-- Renderizado via JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
        MODAL MAPA INTERATIVO (LEAFLET)
        ========================================================================== -->
   <div class="modal-overlay" id="map-modal" style="z-index: 100000;">
@@ -1468,6 +1522,11 @@
               <div class="form-group">
                 <label class="form-label">E-mail</label>
                 <input type="email" class="form-input" id="client-form-email" placeholder="contato@empresa.com.br">
+              </div>
+              <div class="form-group" style="grid-column: span 2;">
+                <label class="form-label">Categoria / Etiqueta</label>
+                <input type="text" class="form-input" id="client-form-category" list="category-options" placeholder="Ex: Revenda, Vip, Atacadista...">
+                <datalist id="category-options"></datalist>
               </div>
             </div>
 
@@ -1753,8 +1812,10 @@
       isStaging: false,
       ordersCollection: 'orders',
       clientsCollection: 'clients',
+      tasksCollection: 'tasks',
       ordersStorageKey: 'decentregas_orders_v1',
       clientsStorageKey: 'decentregas_clients_v1',
+      tasksStorageKey: 'decentregas_tasks_v1',
       configStorageKey: 'decentregas_firebase_config'
     };
 
@@ -2078,6 +2139,12 @@
     };
 
     const ClientApp = {
+      updateCategoryDatalist() {
+        const datalist = document.getElementById('category-options');
+        if (!datalist) return;
+        const categories = [...new Set(this.clients.map(c => c.category).filter(Boolean))];
+        datalist.innerHTML = categories.map(cat => `<option value="${cat}"></option>`).join('');
+      },
       clients: [],
       lastSearchedCnpj: '',
 
@@ -2200,6 +2267,7 @@
             document.getElementById('client-form-contact').value = c.contact || '';
             document.getElementById('client-form-phone').value = c.phone || '';
             document.getElementById('client-form-email').value = c.email || '';
+            document.getElementById('client-form-category').value = c.category || '';
             document.getElementById('client-form-address').value = c.address || '';
             document.getElementById('client-form-city-uf').value = c.cityUf || '';
             document.getElementById('client-form-location-url').value = c.locationUrl || '';
@@ -2319,6 +2387,7 @@
         const contact = document.getElementById('client-form-contact').value.trim();
         const phone = document.getElementById('client-form-phone').value.trim();
         const email = document.getElementById('client-form-email').value.trim();
+        const category = document.getElementById('client-form-category').value.trim();
         const address = document.getElementById('client-form-address').value.trim();
         const cityUf = document.getElementById('client-form-city-uf').value.trim();
         const locationUrl = document.getElementById('client-form-location-url').value.trim();
@@ -2339,6 +2408,7 @@
             target.contact = contact;
             target.phone = phone;
             target.email = email;
+          target.category = category;
             target.address = address;
             target.cityUf = cityUf;
           target.locationUrl = locationUrl;
@@ -2356,6 +2426,7 @@
             contact,
             phone,
             email,
+            category,
             address,
             cityUf,
             locationUrl,
@@ -2661,6 +2732,7 @@
         });
 
         ClientApp.init();
+        TaskApp.init();
         this.render();
         FirebaseEngine.init();
       },
@@ -4317,6 +4389,166 @@
     /* --------------------------------------------------------------------------
        INTEGRAÇÃO NUVEM FIREBASE FIRESTORE
        -------------------------------------------------------------------------- */
+    const TaskApp = {
+      tasks: [],
+      filter: 'hoje', // hoje, semana, proxima, todas
+      
+      init() {
+        this.loadFromStorage();
+        this.render();
+      },
+
+      loadFromStorage() {
+        try {
+          const stored = localStorage.getItem(APP_ENV.tasksStorageKey);
+          if (stored) this.tasks = JSON.parse(stored);
+        } catch (e) {
+          console.error('Erro ao ler tarefas:', e);
+        }
+      },
+
+      saveToStorage() {
+        localStorage.setItem(APP_ENV.tasksStorageKey, JSON.stringify(this.tasks));
+      },
+
+      populateClientSelect() {
+        const select = document.getElementById('task-client-id');
+        if (!select) return;
+        const currentVal = select.value;
+        select.innerHTML = '<option value="">Selecione um cliente...</option>' + 
+          ClientApp.clients.map(c => `<option value="${c.id}">${c.nomeFantasia}</option>`).join('');
+        select.value = currentVal;
+      },
+
+      save(event) {
+        event.preventDefault();
+        const clientId = document.getElementById('task-client-id').value;
+        const desc = document.getElementById('task-desc').value.trim();
+        const date = document.getElementById('task-date').value;
+
+        if (!desc || !date) return;
+
+        const newTask = {
+          id: Date.now().toString(),
+          clientId,
+          description: desc,
+          date, // YYYY-MM-DD
+          completed: false,
+          createdAt: new Date().toISOString()
+        };
+
+        this.tasks.push(newTask);
+        this.saveToStorage();
+        FirebaseEngine.syncTask(newTask);
+        
+        event.target.reset();
+        showToast('Tarefa / Visita agendada!', 'success');
+        this.render();
+      },
+
+      toggleComplete(id) {
+        const task = this.tasks.find(t => String(t.id) === String(id));
+        if (task) {
+          task.completed = !task.completed;
+          this.saveToStorage();
+          FirebaseEngine.syncTask(task);
+          this.render();
+        }
+      },
+
+      deleteTask(id) {
+        if (!confirm('Excluir esta tarefa?')) return;
+        this.tasks = this.tasks.filter(t => String(t.id) !== String(id));
+        this.saveToStorage();
+        FirebaseEngine.deleteTask(id);
+        this.render();
+      },
+
+      setFilter(filter, el) {
+        this.filter = filter;
+        document.querySelectorAll('#agenda-modal .tab').forEach(t => t.classList.remove('active'));
+        if (el) el.classList.add('active');
+        this.render();
+      },
+
+      render() {
+        this.populateClientSelect();
+        
+        const container = document.getElementById('tasks-list-container');
+        const countBadge = document.getElementById('header-tasks-count');
+        if (!container) return;
+
+        // Limpar meia-noite pra calculos precisos (TimeZone local)
+        const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+        const todayTime = new Date(todayStr).getTime();
+        const nextWeekTime = todayTime + (7 * 24 * 60 * 60 * 1000);
+        const nextNextWeekTime = todayTime + (14 * 24 * 60 * 60 * 1000);
+
+        // Se o filtro for 'concluidas', mostra SÓ as concluídas, senão esconde
+        let filtered = this.filter === 'concluidas' ? this.tasks.filter(t => t.completed) : this.tasks.filter(t => !t.completed);
+        
+        // Atualiza o contador de pendentes no Header
+        if (countBadge) countBadge.textContent = filtered.length;
+
+        // Apply tab filters
+        filtered = filtered.filter(t => {
+          if (!t.date) return false;
+          const tTime = new Date(t.date).getTime();
+          
+          if (this.filter === 'hoje') {
+            return t.date === todayStr || tTime < todayTime; // Hoje + atrasadas
+          } else if (this.filter === 'semana') {
+            return tTime >= todayTime && tTime < nextWeekTime;
+          } else if (this.filter === 'proxima') {
+            return tTime >= nextWeekTime && tTime < nextNextWeekTime;
+          }
+          return true; // 'todas'
+        });
+
+        // Ordenar por data crescente
+        filtered.sort((a, b) => a.date.localeCompare(b.date));
+
+        if (filtered.length === 0) {
+          container.innerHTML = `<div class="empty-state">Nenhuma tarefa pendente para este período.</div>`;
+          return;
+        }
+
+        container.innerHTML = filtered.map(t => {
+          let clientHtml = '';
+          if (t.clientId) {
+            const client = ClientApp.getById(t.clientId);
+            if (client) {
+              clientHtml = `<div style="font-size: 0.8rem; color: #475569; margin-top: 4px;"><i class="fa-solid fa-user"></i> ${client.nomeFantasia} ${client.locationUrl ? `<a href="${client.locationUrl}" target="_blank" style="color: #ef4444; margin-left: 5px;"><i class="fa-solid fa-location-dot"></i></a>` : ''}</div>`;
+            }
+          }
+          
+          let dateObj = new Date(t.date + 'T12:00:00');
+          let displayDate = dateObj.toLocaleDateString('pt-BR');
+          let isOverdue = new Date(t.date).getTime() < todayTime && t.date !== todayStr;
+          
+          return `
+            <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); ${isOverdue ? 'border-left: 4px solid #ef4444;' : 'border-left: 4px solid #3b82f6;'}">
+              <div style="display: flex; align-items: center; gap: 15px; flex: 1;">
+                <input type="checkbox" style="width: 20px; height: 20px; cursor: pointer; accent-color: #3b82f6; -webkit-appearance: auto; appearance: auto;" onchange="TaskApp.toggleComplete('${t.id}')" ${t.completed ? 'checked' : ''}>
+                <div>
+                  <div style="font-weight: 600; color: #0f172a;">${t.description}</div>
+                  ${clientHtml}
+                  <div style="font-size: 0.75rem; font-weight: 600; margin-top: 4px; ${isOverdue ? 'color: #ef4444;' : 'color: #3b82f6;'}">
+                    <i class="fa-regular fa-calendar"></i> ${displayDate} ${isOverdue ? '(Atrasada)' : ''}
+                  </div>
+                </div>
+              </div>
+              <div>
+                <button class="btn btn-secondary btn-icon-only" style="color: #ef4444; border: none; background: transparent; box-shadow: none;" onclick="TaskApp.deleteTask('${t.id}')">
+                  <i class="fa-regular fa-trash-can"></i>
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    };
+
     const FirebaseEngine = {
       db: null,
       defaultConfig: {
@@ -4448,6 +4680,36 @@
         }, err => console.log("Erro escuta pedidos", err));
 
         // Ouve Clientes (Sincronização Bidirecional Real-Time Completa)
+        this.db.collection(APP_ENV.tasksCollection).onSnapshot(snap => {
+          let changed = false;
+          snap.docChanges().forEach(change => {
+            const data = change.doc.data();
+            const id = String(data.id || change.doc.id);
+            
+            if (change.type === 'added' || change.type === 'modified') {
+              const idx = TaskApp.tasks.findIndex(t => String(t.id) === id);
+              if (idx >= 0) {
+                if (JSON.stringify(TaskApp.tasks[idx]) !== JSON.stringify(data)) {
+                  TaskApp.tasks[idx] = data;
+                  changed = true;
+                }
+              } else {
+                TaskApp.tasks.push(data);
+                changed = true;
+              }
+            }
+            if (change.type === 'removed') {
+              const oldLen = TaskApp.tasks.length;
+              TaskApp.tasks = TaskApp.tasks.filter(t => String(t.id) !== id);
+              if (oldLen !== TaskApp.tasks.length) changed = true;
+            }
+          });
+          if (changed) {
+            TaskApp.saveToStorage();
+            TaskApp.render();
+          }
+        }, err => console.log("Erro escuta tarefas", err));
+        
         this.db.collection(APP_ENV.clientsCollection).onSnapshot(snap => {
           let changed = false;
           snap.docChanges().forEach(change => {
@@ -4500,6 +4762,24 @@
         }
       },
 
+      async syncTask(task) {
+        if (!this.db || !task) return;
+        try {
+          await this.db.collection(APP_ENV.tasksCollection).doc(String(task.id)).set(task);
+        } catch (e) {
+          console.error("Erro ao sincronizar tarefa", e);
+        }
+      },
+
+      async deleteTask(taskId) {
+        if (!this.db || !taskId) return;
+        try {
+          await this.db.collection(APP_ENV.tasksCollection).doc(String(taskId)).delete();
+        } catch (e) {
+          console.error("Erro ao deletar tarefa do banco", e);
+        }
+      },
+      
       async syncClient(client) {
         if (!this.db || !client) return;
         try {
