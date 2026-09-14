@@ -4228,6 +4228,7 @@
             }
           });
           if (changed) {
+            OrderApp.orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             OrderApp.saveLocally();
             OrderApp.render();
           }
@@ -4261,6 +4262,7 @@
             }
           });
           if (changed) {
+            ClientApp.clients.sort((a, b) => (a.nomeFantasia || a.razaoSocial || '').localeCompare(b.nomeFantasia || b.razaoSocial || ''));
             ClientApp.saveLocally();
             ClientApp.render();
           }
