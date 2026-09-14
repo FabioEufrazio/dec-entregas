@@ -4127,23 +4127,6 @@
         this.updateStats();
 
         showToast(`Sincronização concluída! ${syncedO} pedidos e ${syncedC} clientes unificados do ambiente oposto.`, 'success');
-      },
-
-      async forceFullSync() {
-        if (!this.db) {
-          showToast('A Nuvem não está conectada. Verifique as configurações!', 'error');
-          return;
-        }
-        showToast('Enviando e validando dados com a nuvem...', 'info');
-        try {
-          let count = 0;
-          for (const o of OrderApp.orders) { await this.syncOrder(o); count++; }
-          for (const c of ClientApp.clients) { await this.syncClient(c); count++; }
-          showToast(`Sincronização forçada concluída com sucesso! (${count} registros checados)`, 'success');
-        } catch (e) {
-          console.error(e);
-          showToast('Erro ao forçar sincronização. Verifique sua conexão.', 'error');
-        }
       }
     };
 
