@@ -2007,7 +2007,9 @@
 
         try {
           const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${digits}`);
-          if (!res.ok) throw new Error('CNPJ não encontrado');
+          if (res.status === 429) throw new Error('Limite de consultas (BrasilAPI) excedido. Tente novamente em breve.');
+          if (res.status === 404) throw new Error('CNPJ não encontrado na base da Receita Federal.');
+          if (!res.ok) throw new Error('Serviço de CNPJ indisponível no momento.');
           const data = await res.json();
 
           if (data.razao_social) {
@@ -2023,13 +2025,31 @@
             document.getElementById('client-form-email').value = data.email;
           }
 
-          const logr = `${data.descricao_tipo_de_logradouro || ''} ${data.logradouro || ''}, ${data.numero || 'S/N'} ${data.complemento || ''} - ${data.bairro || ''}`.trim();
-          document.getElementById('client-form-address').value = logr;
+          let num = (data.numero || 'S/N').trim();
+          if (num.toUpperCase() === 'SN' || num === '') num = 'S/N';
+          
+          let partesLogr = [];
+          if (data.descricao_tipo_de_logradouro) partesLogr.push(data.descricao_tipo_de_logradouro);
+          if (data.logradouro) partesLogr.push(data.logradouro);
+          
+          let logr = partesLogr.join(' ').trim();
+          if (logr) {
+            logr += `, ${num}`;
+          } else if (num !== 'S/N') {
+            logr = num;
+          }
+          
+          if (data.complemento) logr += (logr ? ' - ' : '') + data.complemento;
+          if (data.bairro) logr += (logr ? ' - ' : '') + data.bairro;
+
+          document.getElementById('client-form-address').value = logr.trim();
           document.getElementById('client-form-city-uf').value = `${data.municipio || ''} / ${data.uf || ''}`.trim();
 
           showToast('Dados da empresa preenchidos automaticamente da Receita!', 'success');
         } catch (err) {
           console.log('Consulta automática CNPJ:', err);
+          showToast(err.message || 'Erro ao buscar CNPJ', 'error');
+          this.lastSearchedCnpj = null;
         } finally {
           if (spinner) spinner.style.display = 'none';
         }
@@ -2112,10 +2132,16 @@
           this.clients = this.clients.filter(item => String(item.id) !== String(id));
           this.saveLocally();
           FirebaseEngine.deleteClient(id);
-          this.render();
+          // Manter a busca ativa ao excluir, lendo o valor atual do input de busca
+          const currentSearch = document.getElementById('search-clients-input')?.value || '';
+          this.render(currentSearch);
           OrderApp.render();
           showToast('Cliente removido com sucesso!');
         }
+      },
+
+      handleSearch(val) {
+        this.render(val);
       },
 
       render(query = '') {
