@@ -2470,6 +2470,14 @@
           return;
         }
 
+        if (cnpj) {
+          const duplicate = this.clients.find(c => c.cnpj === cnpj && String(c.id) !== String(id));
+          if (duplicate) {
+            showToast('Já existe um cliente cadastrado com este CNPJ!', 'error');
+            return;
+          }
+        }
+
         if (id) {
           const target = this.getById(id);
           if (target) {
