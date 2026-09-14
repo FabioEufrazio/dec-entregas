@@ -1274,7 +1274,7 @@
 
       <div class="modal-body" style="gap: 1rem;">
         <!-- Barra de Ações de Clientes -->
-        <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;">
+        <div id="clients-actions-bar" style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;">
           <div class="search-input-wrapper" style="max-width: 380px;">
             <i class="fa-solid fa-magnifying-glass search-icon-left"></i>
             <input type="search" id="search-clients-input" placeholder="Buscar por Nome, Código, CNPJ ou Cidade..." oninput="ClientApp.handleSearch(this.value)">
@@ -1379,7 +1379,7 @@
         </div>
 
         <!-- Tabela de Clientes Cadastrados (Com Rolagem e Altura Adequada) -->
-        <div class="table-responsive-container" style="min-height: 200px; max-height: 380px; margin-top: 0.5rem;">
+        <div id="clients-table-container" class="table-responsive-container" style="min-height: 200px; max-height: 380px; margin-top: 0.5rem;">
           <table class="orders-table">
             <thead>
               <tr>
@@ -1927,6 +1927,8 @@
 
       openForm(clientId = null) {
         document.getElementById('client-form-container').style.display = 'block';
+        document.getElementById('clients-actions-bar').style.display = 'none';
+        document.getElementById('clients-table-container').style.display = 'none';
         this.lastSearchedCnpj = '';
         if (clientId) {
           const c = this.getById(clientId);
@@ -1954,6 +1956,8 @@
 
       closeForm() {
         document.getElementById('client-form-container').style.display = 'none';
+        document.getElementById('clients-actions-bar').style.display = 'flex';
+        document.getElementById('clients-table-container').style.display = 'block';
         document.getElementById('client-form').reset();
         this.lastSearchedCnpj = '';
       },
@@ -3313,6 +3317,10 @@
       close(modalId) {
         const el = document.getElementById(modalId);
         if (el) el.classList.remove('active');
+        
+        if (modalId === 'clients-modal' && typeof ClientApp !== 'undefined') {
+          ClientApp.closeForm();
+        }
       },
       openAddOrder() {
         OrderApp.openAddModal();
