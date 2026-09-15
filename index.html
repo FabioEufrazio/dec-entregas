@@ -3877,17 +3877,25 @@
        CONTROLE DE MODAIS
        -------------------------------------------------------------------------- */
     const ModalEngine = {
+      baseZIndex: 9999,
       open(modalId) {
         document.body.style.overflow = 'hidden';
         const el = document.getElementById(modalId);
-        if (el) el.classList.add('active');
+        if (el) {
+          this.baseZIndex = (this.baseZIndex || 9999) + 1;
+          el.style.zIndex = this.baseZIndex;
+          el.classList.add('active');
+        }
         if (modalId === 'backup-modal') {
           BackupEngine.updateStats();
         }
       },
       close(modalId) {
         const el = document.getElementById(modalId);
-        if (el) el.classList.remove('active');
+        if (el) {
+          el.classList.remove('active');
+          setTimeout(() => { el.style.zIndex = ''; }, 300);
+        }
         
         if (document.querySelectorAll('.modal-overlay.active').length === 0) {
           document.body.style.overflow = '';
