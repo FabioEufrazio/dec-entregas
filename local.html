@@ -2561,7 +2561,7 @@
           
           // Se o modal de pedido estiver aberto, seleciona o cliente recém criado
           if (document.getElementById('order-modal')?.classList.contains('active')) {
-            ClientPicker.select(newClient.id);
+            ClientPicker.select('order', newClient.id);
           }
         }
 
@@ -3078,7 +3078,7 @@
         document.getElementById('form-order-notes').value = o.notes || '';
 
         // Seleciona o cliente no buscador
-        ClientPicker.select(o.clientId);
+        ClientPicker.select('order', o.clientId);
 
         const container = document.getElementById('branch-orders-fields-container');
         container.innerHTML = '';
