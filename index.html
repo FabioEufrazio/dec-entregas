@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 
 <head>
@@ -1379,7 +1379,12 @@
     <div class="modal-card modal-lg">
       <div class="modal-header">
         <h2><i class="fa-solid fa-calendar-check" style="color: #3b82f6;"></i> Agenda de Visitas e Tarefas</h2>
-        <button class="btn btn-secondary btn-icon-only" onclick="ModalEngine.close('agenda-modal')"><i class="fa-solid fa-xmark"></i></button>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <button class="btn btn-primary" onclick="TaskApp.openNew()" style="font-size: 0.85rem; padding: 0.45rem 1rem;">
+            <i class="fa-solid fa-plus"></i> Agendar
+          </button>
+          <button class="btn btn-secondary btn-icon-only" onclick="ModalEngine.close('agenda-modal')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
       </div>
       
       <!-- Abas de Filtro -->
@@ -1392,41 +1397,6 @@
       </div>
 
       <div class="modal-body">
-        <!-- Formulário Rápido de Tarefa -->
-        <div style="background: #1e293b; border: 1px solid #334155; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-          <form id="task-form" onsubmit="TaskApp.save(event)" style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end;">
-            <div class="form-group" style="margin: 0;">
-              <label class="form-label" style="font-size: 0.8rem;">Cliente (Opcional)</label>
-              <div class="client-picker-wrapper">
-                <input type="hidden" id="task-client-id">
-                <div class="search-input-wrapper" style="width: 100%;">
-                  <i class="fa-solid fa-magnifying-glass search-icon-left"></i>
-                  <input type="text" id="task-client-search" class="form-input" placeholder="Buscar cliente..." autocomplete="off" onfocus="ClientPicker.show('taskAdd')" oninput="ClientPicker.handleInput('taskAdd', this.value)">
-                  <button type="button" id="btn-clear-task-client" onclick="ClientPicker.clear('taskAdd')" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.9rem;">
-                    <i class="fa-solid fa-xmark"></i>
-                  </button>
-                </div>
-                <div id="task-client-dropdown" class="client-picker-dropdown"></div>
-              </div>
-            </div>
-            <div class="form-group" style="margin: 0;">
-              <label class="form-label" style="font-size: 0.8rem;">Descrição da Tarefa / Visita</label>
-              <input type="text" id="task-desc" class="form-input" placeholder="Ex: Visita de cobrança" required>
-            </div>
-            <div class="form-group" style="margin: 0;">
-              <label class="form-label" style="font-size: 0.8rem;">Data Agendada</label>
-              <input type="date" id="task-date" class="form-input" required>
-            </div>
-            <div class="form-group" style="margin: 0; grid-column: span 3;">
-              <label class="form-label" style="font-size: 0.8rem;">Observações / Anotações <span style="color: var(--text-muted); font-weight: 400;">(Opcional)</span></label>
-              <textarea id="task-observation" class="form-input" rows="2" placeholder="Anote detalhes, resultados da visita, acordos, etc..." style="resize: vertical; min-height: 60px;"></textarea>
-            </div>
-            <div class="form-group" style="margin: 0; grid-column: span 3; display: flex; justify-content: flex-end;">
-              <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Agendar</button>
-            </div>
-          </form>
-        </div>
-
         <!-- Lista de Tarefas -->
         <div id="tasks-list-container" style="display: flex; flex-direction: column; gap: 10px;">
           <!-- Renderizado via JS -->
@@ -1479,7 +1449,7 @@
   <div class="modal-overlay" id="edit-task-modal">
     <div class="modal-card">
       <div class="modal-header">
-        <h2><i class="fa-solid fa-pen" style="color: #a855f7;"></i> Editar Tarefa</h2>
+        <h2 id="edit-task-modal-title"><i class="fa-solid fa-pen" style="color: #a855f7;"></i> Editar Tarefa</h2>
         <button class="btn btn-secondary btn-icon-only" onclick="TaskApp.cancelEdit()"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="modal-body">
@@ -1519,7 +1489,7 @@
             
             <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
               <button type="button" class="btn btn-secondary" onclick="TaskApp.cancelEdit()">Cancelar</button>
-              <button type="submit" class="btn btn-purple"><i class="fa-solid fa-check"></i> Atualizar</button>
+              <button type="submit" class="btn btn-purple" id="edit-task-submit-btn"><i class="fa-solid fa-check"></i> Atualizar</button>
             </div>
           </form>
         </div>
@@ -1917,40 +1887,36 @@
   <!-- ==========================================================================
        LÓGICA JAVASCRIPT DA APLICAÇÃO (MODULAR E RESILIENTE)
        ========================================================================== -->
+
   <script>
     /* --------------------------------------------------------------------------
-       CONFIGURAÇÃO DE AMBIENTE (HOMOLOGAÇÃO)
+       CONFIGURACAO DE AMBIENTE (PRODUCAO)
        -------------------------------------------------------------------------- */
     const APP_ENV = {
-      env: 'local',
-      name: 'Local',
+      env: 'production',
+      name: 'Producao',
       isStaging: false,
-      ordersCollection: 'orders_staging',
-      clientsCollection: 'clients_staging',
-      tasksCollection: 'tasks_staging',
-      ordersStorageKey: 'decentregas_orders_staging_v1',
-      clientsStorageKey: 'decentregas_clients_staging_v1',
-      tasksStorageKey: 'decentregas_tasks_staging_v1',
-      configStorageKey: 'decentregas_firebase_config_staging'
+      ordersCollection: 'orders',
+      clientsCollection: 'clients',
+      tasksCollection: 'tasks',
+      ordersStorageKey: 'decentregas_orders_v1',
+      clientsStorageKey: 'decentregas_clients_v1',
+      tasksStorageKey: 'decentregas_tasks_v1',
+      configStorageKey: 'decentregas_firebase_config'
     };
 
-    // MIGRATION: Se o usuário tiver dados salvos com o prefixo antigo "tracklog", migramos para o novo "decentregas"
-    // Isso evita conflitos se ele abrir outros projetos e evita que ele perca a configuração atual.
-    ['orders_staging_v1', 'clients_staging_v1', 'firebase_config_staging', 'orders_v1', 'clients_v1', 'firebase_config'].forEach(suffix => {
-      const oldKey = `tracklog_${suffix}`;
-      const newKey = `decentregas_${suffix}`;
+    // MIGRATION: dados antigos tracklog -> decentregas
+    ['orders_staging_v1', 'clients_staging_v1', 'firebase_config_staging', 'orders_v1', 'clients_v1', 'firebase_config'].forEach(function(suffix) {
+      var oldKey = 'tracklog_' + suffix;
+      var newKey = 'decentregas_' + suffix;
       if (localStorage.getItem(oldKey) && !localStorage.getItem(newKey)) {
         localStorage.setItem(newKey, localStorage.getItem(oldKey));
       }
     });
 
-    /* --------------------------------------------------------------------------
-       FUNÇÕES UTILITÁRIAS & FORMATAÇÃO
-       -------------------------------------------------------------------------- */
     function formatCurrency(val) {
       return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
     }
-
     /* Formatação de data (sem hora por padrão, ou com hora se solicitado) */
     function formatDate(dateStr, includeTime = false) {
       if (!dateStr) return '-';
@@ -4661,6 +4627,23 @@
         // No longer needed since ClientPicker uses dynamic search inputs
       },
 
+      openNew() {
+        // Abre o modal de tarefa em modo de CRIAÇÃO
+        document.getElementById('edit-task-form').reset();
+        document.getElementById('edit-task-form-id').value = '';
+        document.getElementById('edit-task-client-search').value = '';
+        document.getElementById('edit-task-client-id').value = '';
+        document.getElementById('btn-clear-edit-task-client').style.display = 'none';
+        const editObsEl = document.getElementById('edit-task-observation');
+        if (editObsEl) editObsEl.value = '';
+        // Ajustar título e botão para modo criação
+        const titleEl = document.getElementById('edit-task-modal-title');
+        if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-calendar-plus" style="color: #3b82f6;"></i> Nova Tarefa';
+        const submitBtn = document.getElementById('edit-task-submit-btn');
+        if (submitBtn) submitBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Agendar';
+        ModalEngine.open('edit-task-modal');
+      },
+
       editTask(id) {
         const task = this.tasks.find(t => String(t.id) === String(id));
         if (!task) return;
@@ -4686,6 +4669,11 @@
           document.getElementById('edit-task-client-search').value = '';
           document.getElementById('btn-clear-edit-task-client').style.display = 'none';
         }
+        // Ajustar título e botão para modo edição
+        const titleEl = document.getElementById('edit-task-modal-title');
+        if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-pen" style="color: #a855f7;"></i> Editar Tarefa';
+        const submitBtn = document.getElementById('edit-task-submit-btn');
+        if (submitBtn) submitBtn.innerHTML = '<i class="fa-solid fa-check"></i> Atualizar';
 
         ModalEngine.close('agenda-modal');
         ModalEngine.open('edit-task-modal');
@@ -4696,6 +4684,8 @@
         document.getElementById('edit-task-form-id').value = '';
         document.getElementById('edit-task-client-search').value = '';
         document.getElementById('btn-clear-edit-task-client').style.display = 'none';
+        const editObsCancel = document.getElementById('edit-task-observation');
+        if (editObsCancel) editObsCancel.value = '';
         ModalEngine.close('edit-task-modal');
         ModalEngine.open('agenda-modal');
       },
@@ -4713,17 +4703,33 @@
         const taskId = document.getElementById('edit-task-form-id').value;
         
         if (taskId) {
-           const task = this.tasks.find(t => String(t.id) === String(taskId));
-           if (task) {
-             task.clientId = clientId;
-             task.description = desc;
-             task.date = date;
-             task.observation = observation;
-             task.updatedAt = new Date().toISOString();
-             this.saveToStorage();
-             FirebaseEngine.syncTask(task);
-             showToast('Tarefa atualizada!', 'success');
-           }
+          // MODO EDIÇÃO: atualizar tarefa existente
+          const task = this.tasks.find(t => String(t.id) === String(taskId));
+          if (task) {
+            task.clientId = clientId;
+            task.description = desc;
+            task.date = date;
+            task.observation = observation;
+            task.updatedAt = new Date().toISOString();
+            this.saveToStorage();
+            FirebaseEngine.syncTask(task);
+            showToast('Tarefa atualizada!', 'success');
+          }
+        } else {
+          // MODO CRIAÇÃO: nova tarefa
+          const newTask = {
+            id: Date.now().toString(),
+            clientId,
+            description: desc,
+            date,
+            observation,
+            completed: false,
+            createdAt: new Date().toISOString()
+          };
+          this.tasks.push(newTask);
+          this.saveToStorage();
+          FirebaseEngine.syncTask(newTask);
+          showToast('Tarefa agendada com sucesso!', 'success');
         }
         
         this.cancelEdit();
