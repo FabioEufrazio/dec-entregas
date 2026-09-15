@@ -3901,6 +3901,7 @@
        -------------------------------------------------------------------------- */
     const ModalEngine = {
       open(modalId) {
+        document.body.style.overflow = 'hidden';
         const el = document.getElementById(modalId);
         if (el) el.classList.add('active');
         if (modalId === 'backup-modal') {
@@ -3910,6 +3911,10 @@
       close(modalId) {
         const el = document.getElementById(modalId);
         if (el) el.classList.remove('active');
+        
+        if (document.querySelectorAll('.modal-overlay.active').length === 0) {
+          document.body.style.overflow = '';
+        }
         
         if (modalId === 'clients-modal' && typeof ClientApp !== 'undefined') {
           ClientApp.closeForm();
