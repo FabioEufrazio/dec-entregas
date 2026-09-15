@@ -4691,7 +4691,6 @@
           document.getElementById('btn-clear-edit-task-client').style.display = 'none';
         }
 
-        ModalEngine.close('agenda-modal');
         ModalEngine.open('edit-task-modal');
       },
       
@@ -4701,7 +4700,6 @@
         document.getElementById('edit-task-client-search').value = '';
         document.getElementById('btn-clear-edit-task-client').style.display = 'none';
         ModalEngine.close('edit-task-modal');
-        ModalEngine.open('agenda-modal');
       },
 
       saveEdit(event) {
