@@ -2634,7 +2634,7 @@
           const codeTag = cleanClientCode(c.code);
 
           return `
-            <tr onclick="OrderApp.openClientHistory('${c.id}')" style="cursor: pointer;" class="mobile-clickable-row">
+            <tr onclick="ClientApp.viewOrdersHistory('${c.id}')" style="cursor: pointer;" class="mobile-clickable-row">
                 <td>
                   <span class="client-code-tag">${escapeHtml(codeTag || 'S/CÓD')}</span>
               </td>
