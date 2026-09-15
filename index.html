@@ -2516,12 +2516,21 @@
         }
 
         if (cnpj) {
-          const duplicate = this.clients.find(c => c && c.cnpj === cnpj && String(c.id) !== String(id));
-          if (duplicate) {
-            showToast('Já existe um cliente cadastrado com este CNPJ!', 'error');
-            return;
+            let isCnpjChanged = true;
+            if (id) {
+              const currentClient = this.getById(id);
+              if (currentClient && currentClient.cnpj === cnpj) {
+                isCnpjChanged = false;
+              }
+            }
+            if (isCnpjChanged) {
+              const duplicate = this.clients.find(c => c && c.cnpj === cnpj && String(c.id) !== String(id));
+              if (duplicate) {
+                showToast('J\u00e1 existe um cliente cadastrado com este CNPJ!', 'error');
+                return;
+              }
+            }
           }
-        }
 
         if (id) {
           const target = this.getById(id);
