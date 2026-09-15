@@ -249,7 +249,7 @@
       flex-direction: column;
       gap: 0.35rem;
       box-shadow: var(--shadow-sm);
-      transition: transform 0.2s;
+      
     }
 
     .metric-card:hover {
@@ -1009,7 +1009,19 @@
       color: white;
       border-color: #3b82f6;
     }
-  </style>
+  
+      .task-sortable-ghost {
+        opacity: 0 !important;
+      }
+      .task-sortable-drag {
+        opacity: 1 !important;
+        background: #1e293b !important;
+        box-shadow: 0 15px 30px rgba(0,0,0,0.6) !important;
+        transform: scale(1.02);
+        cursor: grabbing !important;
+        z-index: 99999 !important;
+      }
+    </style>
   <!-- Leaflet CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
@@ -4867,7 +4879,7 @@
           let isOverdue = new Date(t.date).getTime() < todayTime && t.date !== todayStr;
           
           return `
-            <div data-id="${t.id}" style="background: #2a364f; border: 1px solid #3b4b6b; border-radius: 8px; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: transform 0.2s; ${isOverdue ? 'border-left: 5px solid #ef4444;' : 'border-left: 5px solid #3b82f6;'}">
+            <div data-id="${t.id}" style="background: #2a364f; border: 1px solid #3b4b6b; border-radius: 8px; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3);  ${isOverdue ? 'border-left: 5px solid #ef4444;' : 'border-left: 5px solid #3b82f6;'}">
               <div style="display: flex; align-items: center; gap: 15px; flex: 1;">
                 <input type="checkbox" style="width: 20px; height: 20px; cursor: pointer; accent-color: #3b82f6; -webkit-appearance: auto; appearance: auto; ${t.completed ? 'display: none;' : ''}" onchange="TaskApp.toggleComplete('${t.id}')" ${t.completed ? 'checked' : ''}>
                 <div>
@@ -4901,6 +4913,10 @@
               animation: 150,
               delay: 200,
               delayOnTouchOnly: true,
+              ghostClass: 'task-sortable-ghost',
+              dragClass: 'task-sortable-drag',
+              fallbackClass: 'task-sortable-drag',
+              forceFallback: true,
               onEnd: (evt) => {
                 const itemEls = Array.from(container.children);
                 itemEls.forEach((el, index) => {
