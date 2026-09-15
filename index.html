@@ -4705,11 +4705,14 @@
         // No longer needed since ClientPicker uses dynamic search inputs
       },
         openNew() {
-          document.getElementById('edit-task-form').reset();
-          document.getElementById('edit-task-form-id').value = '';
-          document.getElementById('edit-task-client-id').value = '';
-          document.getElementById('edit-task-client-search').value = '';
-          document.getElementById('btn-clear-edit-task-client').style.display = 'none';
+            document.getElementById('edit-task-form').reset();
+            document.getElementById('edit-task-form-id').value = '';
+            document.getElementById('edit-task-client-id').value = '';
+            document.getElementById('edit-task-client-search').value = '';
+            document.getElementById('btn-clear-edit-task-client').style.display = 'none';
+            
+            // Define a data padrão para hoje
+            document.getElementById('edit-task-date').value = new Date().toISOString().split('T')[0];
           
           const title = document.getElementById('edit-task-modal-title');
           if(title) title.innerHTML = '<i class="fa-solid fa-plus" style="color: #a855f7;"></i> Criar Tarefa';
