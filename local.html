@@ -638,6 +638,7 @@
        7. MODAIS E POPUPS
        ========================================================================== */
     .modal-overlay {
+      overscroll-behavior: none;
       position: fixed;
       top: 0;
       left: 0;
@@ -665,6 +666,7 @@
     }
 
     .modal-card {
+      overscroll-behavior: none;
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
@@ -3941,7 +3943,7 @@
     const ModalEngine = {
       baseZIndex: 9999,
       open(modalId) {
-        // document.body.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
         const el = document.getElementById(modalId);
         if (el) {
           this.baseZIndex = (this.baseZIndex || 9999) + 1;
