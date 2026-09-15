@@ -656,6 +656,14 @@
       display: flex;
     }
 
+    .modal-card form {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+      min-height: 0;
+    }
+
     .modal-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
@@ -3933,7 +3941,7 @@
     const ModalEngine = {
       baseZIndex: 9999,
       open(modalId) {
-        document.body.style.overflow = 'hidden';
+        // document.body.style.overflow = 'hidden';
         const el = document.getElementById(modalId);
         if (el) {
           this.baseZIndex = (this.baseZIndex || 9999) + 1;
@@ -3952,7 +3960,7 @@
         }
         
         if (document.querySelectorAll('.modal-overlay.active').length === 0) {
-          document.body.style.overflow = '';
+          // document.body.style.overflow = '';
         }
         
         if (modalId === 'clients-modal' && typeof ClientApp !== 'undefined') {
