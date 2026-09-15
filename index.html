@@ -1392,40 +1392,12 @@
       </div>
 
       <div class="modal-body">
-        <!-- Formulário Rápido de Tarefa -->
-        <div style="background: #1e293b; border: 1px solid #334155; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-          <form id="task-form" onsubmit="TaskApp.save(event)" style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end;">
-            <div class="form-group" style="margin: 0;">
-              <label class="form-label" style="font-size: 0.8rem;">Cliente (Opcional)</label>
-              <div class="client-picker-wrapper">
-                <input type="hidden" id="task-client-id">
-                <div class="search-input-wrapper" style="width: 100%;">
-                  <i class="fa-solid fa-magnifying-glass search-icon-left"></i>
-                  <input type="text" id="task-client-search" class="form-input" placeholder="Buscar cliente..." autocomplete="off" onfocus="ClientPicker.show('taskAdd')" oninput="ClientPicker.handleInput('taskAdd', this.value)">
-                  <button type="button" id="btn-clear-task-client" onclick="ClientPicker.clear('taskAdd')" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.9rem;">
-                    <i class="fa-solid fa-xmark"></i>
-                  </button>
-                </div>
-                <div id="task-client-dropdown" class="client-picker-dropdown"></div>
-              </div>
-            </div>
-            <div class="form-group" style="margin: 0;">
-              <label class="form-label" style="font-size: 0.8rem;">Descrição da Tarefa / Visita</label>
-              <input type="text" id="task-desc" class="form-input" placeholder="Ex: Visita de cobrança" required>
-            </div>
-            <div class="form-group" style="margin: 0;">
-              <label class="form-label" style="font-size: 0.8rem;">Data Agendada</label>
-              <input type="date" id="task-date" class="form-input" required>
-            </div>
-            <div class="form-group" style="margin: 0; grid-column: span 3;">
-              <label class="form-label" style="font-size: 0.8rem;">Observações / Anotações <span style="color: var(--text-muted); font-weight: 400;">(Opcional)</span></label>
-              <textarea id="task-observation" class="form-input" rows="2" placeholder="Anote detalhes, resultados da visita, acordos, etc..." style="resize: vertical; min-height: 60px;"></textarea>
-            </div>
-            <div class="form-group" style="margin: 0; grid-column: span 3; display: flex; justify-content: flex-end;">
-              <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Agendar</button>
-            </div>
-          </form>
-        </div>
+        <!-- Botão para Criar Nova Tarefa -->
+          <div style="margin-bottom: 15px; display: flex; justify-content: flex-end;">
+            <button class="btn btn-primary" style="padding: 6px 12px; font-size: 0.85rem;" onclick="TaskApp.openNew()">
+              <i class="fa-solid fa-plus"></i> Criar nova tarefa
+            </button>
+          </div>
 
         <!-- Lista de Tarefas -->
         <div id="tasks-list-container" style="display: flex; flex-direction: column; gap: 10px;">
@@ -2725,7 +2697,10 @@
         // Tarefas vinculadas ao cliente
         const clientTasks = (TaskApp.tasks || [])
           .filter(t => String(t.clientId) === String(clientId))
-          .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+          .sort((a, b) => {
+              if (a.completed !== b.completed) return a.completed ? 1 : -1;
+              return (b.date || '').localeCompare(a.date || '');
+            });
 
         const totalSpent = clientOrders.reduce((sum, o) => sum + (Number(o.totalValue) || 0), 0);
         const openTasks = clientTasks.filter(t => !t.completed).length;
@@ -2765,11 +2740,16 @@
                 <div style="background:var(--bg-input);border:1px solid var(--border);border-left:3px solid ${sColor};border-radius:6px;padding:0.75rem 1rem;">
                   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem;">
                     <div style="flex:1;">
-                      <div style="font-weight:600;font-size:0.9rem;color:var(--text-main);">${escapeHtml(t.description)}</div>
+                      <div style="font-weight:600;font-size:0.9rem;color:var(--text-main);${done ? 'text-decoration: line-through; color: var(--text-muted);' : ''}">${escapeHtml(t.description)}</div>
                       <div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.2rem;"><i class="fa-regular fa-calendar"></i> ${dateFmt}</div>
                       ${obs}
                     </div>
-                    <span style="color:${sColor};font-size:0.78rem;font-weight:600;white-space:nowrap;"><i class="fa-solid ${sIcon}"></i> ${sLabel}</span>
+                    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem;">
+                        <span style="color:${sColor};font-size:0.78rem;font-weight:600;white-space:nowrap;"><i class="fa-solid ${sIcon}"></i> ${sLabel}</span>
+                        <button class="btn btn-secondary btn-icon-only" style="padding:4px; min-width:unset; height:unset; border:none; background:transparent; color:var(--text-muted);" onclick="TaskApp.editTask('${t.id}')" title="Ver / Editar Tarefa">
+                          <i class="fa-solid fa-pen"></i>
+                        </button>
+                      </div>
                   </div>
                 </div>`;
             }).join('');
@@ -4662,8 +4642,17 @@
       populateClientSelect() {
         // No longer needed since ClientPicker uses dynamic search inputs
       },
+        openNew() {
+          document.getElementById('edit-task-form').reset();
+          document.getElementById('edit-task-form-id').value = '';
+          document.getElementById('edit-task-client-id').value = '';
+          document.getElementById('edit-task-client-search').value = '';
+          document.getElementById('btn-clear-edit-task-client').style.display = 'none';
+          
+          ModalEngine.open('edit-task-modal');
+        },
 
-      editTask(id) {
+        editTask(id) {
         const task = this.tasks.find(t => String(t.id) === String(id));
         if (!task) return;
         
@@ -4817,7 +4806,7 @@
           if (this.filter === 'hoje') {
             return t.date === todayStr || tTime < todayTime; // Hoje + atrasadas
           } else if (this.filter === 'semana') {
-            return tTime >= todayTime && tTime < nextWeekTime;
+              return tTime < nextWeekTime; // Atrasadas + Hoje + próximos dias
           } else if (this.filter === 'proxima') {
             return tTime >= nextWeekTime && tTime < nextNextWeekTime;
           }
@@ -4837,7 +4826,7 @@
           if (t.clientId) {
             const client = ClientApp.getById(t.clientId);
             if (client) {
-              clientHtml = `<div style="font-size: 0.8rem; color: #cbd5e1; margin-top: 4px;"><i class="fa-solid fa-user" style="color: #64748b; margin-right: 4px;"></i> ${client.nomeFantasia} ${client.locationUrl ? `<a href="${client.locationUrl}" target="_blank" style="color: #ef4444; margin-left: 5px;"><i class="fa-solid fa-location-dot"></i></a>` : ''}</div>`;
+              clientHtml = `<div style="font-size: 0.8rem; color: #cbd5e1; margin-top: 4px;"><i class="fa-solid fa-user" style="color: #64748b; margin-right: 4px;"></i> <span onclick="ClientApp.viewOrdersHistory('${t.clientId}')" style="cursor: pointer; color: #38bdf8; text-decoration: underline;" title="Ver histórico do cliente">${client.nomeFantasia}</span> ${client.locationUrl ? `<a href="${client.locationUrl}" target="_blank" style="color: #ef4444; margin-left: 5px;"><i class="fa-solid fa-location-dot"></i></a>` : ''}</div>`;
             }
           }
           
@@ -4848,9 +4837,9 @@
           return `
             <div style="background: #2a364f; border: 1px solid #3b4b6b; border-radius: 8px; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: transform 0.2s; ${isOverdue ? 'border-left: 5px solid #ef4444;' : 'border-left: 5px solid #3b82f6;'}">
               <div style="display: flex; align-items: center; gap: 15px; flex: 1;">
-                <input type="checkbox" style="width: 20px; height: 20px; cursor: pointer; accent-color: #3b82f6; -webkit-appearance: auto; appearance: auto;" onchange="TaskApp.toggleComplete('${t.id}')" ${t.completed ? 'checked' : ''}>
+                <input type="checkbox" style="width: 20px; height: 20px; cursor: pointer; accent-color: #3b82f6; -webkit-appearance: auto; appearance: auto; ${t.completed ? 'display: none;' : ''}" onchange="TaskApp.toggleComplete('${t.id}')" ${t.completed ? 'checked' : ''}>
                 <div>
-                  <div style="font-weight: 600; color: #f8fafc;">${t.description}</div>
+                  <div style="font-weight: 600; color: #f8fafc; ${t.completed ? 'text-decoration: line-through; color: #94a3b8;' : ''}">${t.description}</div>
                   ${clientHtml}
                   <div style="font-size: 0.75rem; font-weight: 600; margin-top: 4px; ${isOverdue ? 'color: #ef4444;' : 'color: #3b82f6;'}">
                     <i class="fa-regular fa-calendar"></i> ${displayDate} ${isOverdue ? '(Atrasada)' : ''}
@@ -4858,7 +4847,10 @@
                 </div>
               </div>
               <div style="display: flex; gap: 5px;">
-                <button class="btn btn-secondary btn-icon-only" style="color: #3b82f6; border: none; background: transparent; box-shadow: none;" onclick="TaskApp.editTask('${t.id}')" title="Editar">
+                ${t.completed ? `<button class="btn btn-secondary btn-icon-only" style="color: #f59e0b; border: none; background: transparent; box-shadow: none;" onclick="TaskApp.toggleComplete('${t.id}')" title="Reabrir Tarefa">
+                    <i class="fa-solid fa-rotate-left"></i>
+                  </button>` : ''}
+                  <button class="btn btn-secondary btn-icon-only" style="color: #3b82f6; border: none; background: transparent; box-shadow: none;" onclick="TaskApp.editTask('${t.id}')" title="Editar">
                   <i class="fa-solid fa-pen"></i>
                 </button>
                 <button class="btn btn-secondary btn-icon-only" style="color: #ef4444; border: none; background: transparent; box-shadow: none;" onclick="TaskApp.deleteTask('${t.id}')" title="Excluir">
