@@ -1021,6 +1021,12 @@
         cursor: grabbing !important;
         z-index: 99999 !important;
       }
+    
+      @media (max-width: 768px) {
+        .hide-on-mobile {
+          display: none !important;
+        }
+      }
     </style>
   <!-- Leaflet CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
@@ -1522,7 +1528,7 @@
         <button class="modal-close-btn" onclick="ModalEngine.close('clients-modal')"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
-      <div class="modal-body" style="gap: 1rem;">
+      <div class="modal-body" style="gap: 1rem; display: flex; flex-direction: column; flex: 1; overflow: hidden;">
         <!-- Barra de Ações de Clientes -->
         <div id="clients-actions-bar" style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;">
           <div class="search-input-wrapper" style="max-width: 380px;">
@@ -1531,10 +1537,10 @@
           </div>
 
           <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-            <button class="btn btn-secondary" onclick="ClientApp.exportBackup()" title="Exportar backup dos clientes cadastrados para arquivo JSON">
+            <button class="btn btn-secondary hide-on-mobile" onclick="ClientApp.exportBackup()" title="Exportar backup dos clientes cadastrados para arquivo JSON">
               <i class="fa-solid fa-file-export"></i> Exportar Backup
             </button>
-            <label class="btn btn-secondary" style="cursor: pointer; margin-bottom: 0;" title="Importar arquivo de backup de clientes">
+            <label class="btn btn-secondary hide-on-mobile" style="cursor: pointer; margin-bottom: 0;" title="Importar arquivo de backup de clientes">
               <i class="fa-solid fa-file-import"></i> Importar Backup
               <input type="file" accept=".json" style="display: none;" onchange="ClientApp.importBackup(event)">
             </label>
@@ -1642,7 +1648,7 @@
         </div>
 
         <!-- Tabela de Clientes Cadastrados (Com Rolagem e Altura Adequada) -->
-        <div id="clients-table-container" class="table-responsive-container" style="min-height: 200px; max-height: 380px; margin-top: 0.5rem;">
+        <div id="clients-table-container" class="table-responsive-container" style="min-height: 200px; flex: 1; margin-top: 0.5rem; overflow-y: auto;">
           <table class="orders-table">
             <thead>
               <tr>
