@@ -1013,7 +1013,8 @@
   <!-- Leaflet CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-</head>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  </head>
 
 <body>
 
@@ -4839,7 +4840,13 @@
         });
 
         // Ordenar por data crescente
-        filtered.sort((a, b) => a.date.localeCompare(b.date));
+        filtered.sort((a, b) => {
+          const dateCmp = (a.date || '').localeCompare(b.date || '');
+          if (dateCmp !== 0) return dateCmp;
+          const orderA = typeof a.sortOrder === 'number' ? a.sortOrder : 999999;
+          const orderB = typeof b.sortOrder === 'number' ? b.sortOrder : 999999;
+          return orderA - orderB;
+        });
 
         if (filtered.length === 0) {
           container.innerHTML = `<div class="empty-state">Nenhuma tarefa pendente para este período.</div>`;
@@ -4860,7 +4867,7 @@
           let isOverdue = new Date(t.date).getTime() < todayTime && t.date !== todayStr;
           
           return `
-            <div style="background: #2a364f; border: 1px solid #3b4b6b; border-radius: 8px; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: transform 0.2s; ${isOverdue ? 'border-left: 5px solid #ef4444;' : 'border-left: 5px solid #3b82f6;'}">
+            <div data-id="${t.id}" style="background: #2a364f; border: 1px solid #3b4b6b; border-radius: 8px; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: transform 0.2s; ${isOverdue ? 'border-left: 5px solid #ef4444;' : 'border-left: 5px solid #3b82f6;'}">
               <div style="display: flex; align-items: center; gap: 15px; flex: 1;">
                 <input type="checkbox" style="width: 20px; height: 20px; cursor: pointer; accent-color: #3b82f6; -webkit-appearance: auto; appearance: auto; ${t.completed ? 'display: none;' : ''}" onchange="TaskApp.toggleComplete('${t.id}')" ${t.completed ? 'checked' : ''}>
                 <div>
@@ -4885,10 +4892,41 @@
             </div>
           `;
         }).join('');
-      }
-    };
 
-    const FirebaseEngine = {
+          if (this.sortableInstance) {
+            this.sortableInstance.destroy();
+          }
+          if (typeof Sortable !== 'undefined') {
+            this.sortableInstance = Sortable.create(container, {
+              animation: 150,
+              delay: 200,
+              delayOnTouchOnly: true,
+              onEnd: (evt) => {
+                const itemEls = Array.from(container.children);
+                itemEls.forEach((el, index) => {
+                  const id = el.getAttribute('data-id');
+                  if (id) {
+                    const task = this.tasks.find(t => String(t.id) === String(id));
+                    if (task) {
+                      task.sortOrder = index;
+                    }
+                  }
+                });
+                this.saveToStorage();
+                itemEls.forEach((el) => {
+                  const id = el.getAttribute('data-id');
+                  if (id) {
+                    const task = this.tasks.find(t => String(t.id) === String(id));
+                    if (task) FirebaseEngine.syncTask(task);
+                  }
+                });
+              }
+            });
+          }
+        }
+      };
+
+      const FirebaseEngine = {
       db: null,
       defaultConfig: {
         apiKey: "AIzaSyB2ArO22BUXnqIKc_Nelm3EapuQAiRRM80",
