@@ -4794,7 +4794,7 @@
                showToast('Tarefa atualizada!', 'success');
              }
           } else {
-             const maxSortOrder = this.tasks.reduce((max, t) => Math.max(max, (typeof t.sortOrder === 'number' ? t.sortOrder : 0)), 0);
+             const minSortOrder = this.tasks.reduce((min, t) => Math.min(min, (typeof t.sortOrder === 'number' ? t.sortOrder : 999999)), 999999);
                const newTask = {
                  id: Date.now().toString(),
                  clientId,
@@ -4802,7 +4802,7 @@
                  date,
                  observation,
                  completed: false,
-                 sortOrder: maxSortOrder + 1,
+                 sortOrder: minSortOrder - 1,
                  createdAt: new Date().toISOString()
                };
              this.tasks.push(newTask);
