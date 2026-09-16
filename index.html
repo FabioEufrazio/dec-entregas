@@ -3962,7 +3962,7 @@
         }
         
         if (document.querySelectorAll('.modal-overlay.active').length === 0) {
-          // document.body.style.overflow = '';
+          document.body.style.overflow = '';
         }
         
         if (modalId === 'clients-modal' && typeof ClientApp !== 'undefined') {
@@ -4794,15 +4794,17 @@
                showToast('Tarefa atualizada!', 'success');
              }
           } else {
-             const newTask = {
-               id: Date.now().toString(),
-               clientId,
-               description: desc,
-               date,
-               observation,
-               completed: false,
-               createdAt: new Date().toISOString()
-             };
+             const maxSortOrder = this.tasks.reduce((max, t) => Math.max(max, (typeof t.sortOrder === 'number' ? t.sortOrder : 0)), 0);
+               const newTask = {
+                 id: Date.now().toString(),
+                 clientId,
+                 description: desc,
+                 date,
+                 observation,
+                 completed: false,
+                 sortOrder: maxSortOrder + 1,
+                 createdAt: new Date().toISOString()
+               };
              this.tasks.push(newTask);
              this.saveToStorage();
              FirebaseEngine.syncTask(newTask);
@@ -4907,11 +4909,10 @@
 
         // Ordenar por data crescente
         filtered.sort((a, b) => {
-          const dateCmp = (a.date || '').localeCompare(b.date || '');
-          if (dateCmp !== 0) return dateCmp;
           const orderA = typeof a.sortOrder === 'number' ? a.sortOrder : 999999;
-          const orderB = typeof b.sortOrder === 'number' ? b.sortOrder : 999999;
-          return orderA - orderB;
+            const orderB = typeof b.sortOrder === 'number' ? b.sortOrder : 999999;
+            if (orderA !== orderB) return orderA - orderB;
+            return (a.date || '').localeCompare(b.date || '');
         });
 
         if (filtered.length === 0) {
