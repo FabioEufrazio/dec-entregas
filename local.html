@@ -1356,8 +1356,15 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label">Observações Internas (Opcional)</label>
-            <textarea class="form-textarea" id="form-order-notes" rows="2" placeholder="Informações de rota, notas fiscais, orientações de frete..."></textarea>
+            <label class="form-label">Nova Observação / Registro</label>
+            <textarea class="form-textarea" id="form-order-new-note" rows="2" placeholder="Digite uma nova observação ou nota para o pedido..."></textarea>
+            
+            <div id="form-order-notes-history-container" style="margin-top: 1rem; display: none;">
+              <h4 style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">Histórico de Observações:</h4>
+              <div id="form-order-notes-history" style="max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; padding-right: 4px;">
+                <!-- Observações renderizadas via JS -->
+              </div>
+            </div>
           </div>
         </div>
 
@@ -3130,6 +3137,8 @@
         container.innerHTML = '';
         this.addBranchOrderField();
 
+        document.getElementById('form-order-notes-history-container').style.display = 'none';
+
         ModalEngine.open('order-modal');
       },
 
@@ -3144,7 +3153,28 @@
         document.getElementById('form-order-date').value = o.createdAt ? new Date(o.createdAt).toISOString().slice(0, 16) : '';
         document.getElementById('form-order-delivery-deadline').value = o.deliveryDeadline || '';
         document.getElementById('form-order-initial-status').value = o.currentStatus || 'colocar_pedido';
-        document.getElementById('form-order-notes').value = o.notes || '';
+        document.getElementById('form-order-new-note').value = '';
+
+        // Migração de observações antigas
+        if (o.notes && (!o.observationHistory || o.observationHistory.length === 0)) {
+          o.observationHistory = [{ date: o.createdAt || new Date().toISOString(), text: o.notes }];
+          o.notes = ''; // Limpa o antigo após migrar
+        }
+
+        const historyContainer = document.getElementById('form-order-notes-history-container');
+        const historyList = document.getElementById('form-order-notes-history');
+        if (o.observationHistory && o.observationHistory.length > 0) {
+          historyContainer.style.display = 'block';
+          historyList.innerHTML = o.observationHistory.map(obs => `
+            <div style="background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-left: 2px solid var(--accent-blue); padding: 0.5rem; border-radius: 4px; font-size: 0.8rem; color: var(--text-muted);">
+              <div style="font-size: 0.7rem; color: #64748b; margin-bottom: 2px;"><i class="fa-regular fa-clock"></i> ${new Date(obs.date).toLocaleString('pt-BR')}</div>
+              <div style="white-space: pre-line; color: var(--text-main);">${escapeHtml(obs.text)}</div>
+            </div>
+          `).join('');
+        } else {
+          historyContainer.style.display = 'none';
+          historyList.innerHTML = '';
+        }
 
         // Seleciona o cliente no buscador
         ClientPicker.select('order', o.clientId);
@@ -3175,7 +3205,7 @@
         const createdAt = dateInput ? new Date(dateInput).toISOString() : new Date().toISOString();
         const deliveryDeadline = document.getElementById('form-order-delivery-deadline').value.trim();
         const initialStatus = document.getElementById('form-order-initial-status').value;
-        const notes = document.getElementById('form-order-notes').value.trim();
+        const newNote = document.getElementById('form-order-new-note').value.trim();
 
         // Coleta todos os números de pedidos e valores informados por filial
         const numInputs = document.querySelectorAll('.dynamic-branch-num');
@@ -3219,7 +3249,12 @@
             target.totalValue = totalValue;
             target.createdAt = createdAt;
             target.deliveryDeadline = deliveryDeadline;
-            target.notes = notes;
+            
+            if (newNote) {
+              target.observationHistory = target.observationHistory || [];
+              target.observationHistory.unshift({ date: new Date().toISOString(), text: newNote });
+            }
+            
             FirebaseEngine.syncOrder(target);
             showToast('Pedido atualizado com sucesso!');
           }
@@ -3240,7 +3275,7 @@
             currentStatus: initialStatus,
             active: initialStatus !== 'entregue',
             deliveredAt: initialStatus === 'entregue' ? nowTime : null,
-            notes,
+            observationHistory: newNote ? [{ date: nowTime, text: newNote }] : [],
             statusHistory: [
               {
                 status: initialStatus,
