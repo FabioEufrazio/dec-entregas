@@ -2804,14 +2804,22 @@
 
         const tasksList = document.getElementById('client-tasks-list');
         if (tasksList) {
+          const novaTarefaBtnHTML = `
+            <div style="margin-bottom: 0.75rem; display: flex; justify-content: flex-end;">
+              <button class="btn btn-primary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="ModalEngine.close('client-orders-history-modal'); TaskApp.openNew('${clientId}')">
+                <i class="fa-solid fa-plus"></i> Nova Tarefa
+              </button>
+            </div>
+          `;
+
           if (clientTasks.length === 0) {
-            tasksList.innerHTML = `
+            tasksList.innerHTML = novaTarefaBtnHTML + `
               <div style="text-align: center; color: var(--text-muted); padding: 2rem;">
                 <i class="fa-regular fa-calendar-xmark" style="font-size: 2rem; margin-bottom: 0.5rem; display: block;"></i>
                 Nenhuma tarefa registrada para este cliente.
               </div>`;
           } else {
-            tasksList.innerHTML = clientTasks.map(t => {
+            tasksList.innerHTML = novaTarefaBtnHTML + clientTasks.map(t => {
               const done = t.completed;
               const sColor = done ? 'var(--accent-green)' : 'var(--accent-amber)';
               const sIcon  = done ? 'fa-circle-check' : 'fa-circle-half-stroke';
@@ -4734,12 +4742,20 @@
       populateClientSelect() {
         // No longer needed since ClientPicker uses dynamic search inputs
       },
-        openNew() {
+        openNew(clientId = null) {
             document.getElementById('edit-task-form').reset();
             document.getElementById('edit-task-form-id').value = '';
-            document.getElementById('edit-task-client-id').value = '';
-            document.getElementById('edit-task-client-search').value = '';
-            document.getElementById('btn-clear-edit-task-client').style.display = 'none';
+            
+            if (clientId) {
+              document.getElementById('edit-task-client-id').value = clientId;
+              const client = typeof ClientApp !== 'undefined' ? ClientApp.getById(clientId) : null;
+              document.getElementById('edit-task-client-search').value = client ? (client.nomeFantasia || client.razaoSocial || '') : '';
+              document.getElementById('btn-clear-edit-task-client').style.display = 'flex';
+            } else {
+              document.getElementById('edit-task-client-id').value = '';
+              document.getElementById('edit-task-client-search').value = '';
+              document.getElementById('btn-clear-edit-task-client').style.display = 'none';
+            }
             
             // Define a data padrão para hoje
             document.getElementById('edit-task-date').value = new Date().toISOString().split('T')[0];
