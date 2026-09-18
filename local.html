@@ -1679,6 +1679,12 @@
                 <input type="text" class="form-input" id="client-form-city-uf" placeholder="São Paulo / SP">
               </div>
             </div>
+
+            <!-- Linha 5: Observações -->
+            <div class="form-group" style="margin-bottom: 0.85rem;">
+              <label class="form-label">Observações / Informações Importantes</label>
+              <textarea class="form-input" id="client-form-notes" rows="3" placeholder="Restrições de horário, referências de entrega, contatos extras..."></textarea>
+            </div>
             
             
 
@@ -2409,6 +2415,7 @@
             document.getElementById('client-form-address').value = c.address || '';
             document.getElementById('client-form-city-uf').value = c.cityUf || '';
             document.getElementById('client-form-location-url').value = c.locationUrl || '';
+            document.getElementById('client-form-notes').value = c.notes || '';
             this.lastSearchedCnpj = (c.cnpj || '').replace(/\D/g, '');
           }
         } else {
@@ -2529,6 +2536,7 @@
         const address = document.getElementById('client-form-address').value.trim();
         const cityUf = document.getElementById('client-form-city-uf').value.trim();
         const locationUrl = document.getElementById('client-form-location-url').value.trim();
+        const notes = document.getElementById('client-form-notes').value.trim();
 
         if (!nomeFantasia && !razaoSocial) {
           showToast('Preencha o Nome Fantasia ou a Razão Social!', 'error');
@@ -2567,6 +2575,7 @@
             target.address = address;
             target.cityUf = cityUf;
           target.locationUrl = locationUrl;
+            target.notes = notes;
             FirebaseEngine.syncClient(target);
             showToast('Cliente atualizado com sucesso!');
           }
@@ -2585,6 +2594,7 @@
             address,
             cityUf,
             locationUrl,
+            notes,
             createdAt: new Date().toISOString()
           };
           this.clients.unshift(newClient);
@@ -4892,9 +4902,13 @@
 
         // Limpar meia-noite pra calculos precisos (TimeZone local)
         const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
-        const todayTime = new Date(todayStr).getTime();
-        const nextWeekTime = todayTime + (7 * 24 * 60 * 60 * 1000);
-        const nextNextWeekTime = todayTime + (14 * 24 * 60 * 60 * 1000);
+        const todayObj = new Date(todayStr);
+        const todayTime = todayObj.getTime();
+        
+        const dayOfWeek = todayObj.getDay();
+        const daysToNextMonday = dayOfWeek === 0 ? 1 : 8 - dayOfWeek;
+        const nextWeekTime = todayTime + (daysToNextMonday * 24 * 60 * 60 * 1000);
+        const nextNextWeekTime = nextWeekTime + (7 * 24 * 60 * 60 * 1000);
 
         // Se o filtro for 'concluidas', mostra SÓ as concluídas, senão esconde
         let filtered = this.filter === 'concluidas' ? this.tasks.filter(t => t.completed) : this.tasks.filter(t => !t.completed);
