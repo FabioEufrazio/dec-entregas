@@ -4917,11 +4917,11 @@
         if (!container) return;
 
         // Limpar meia-noite pra calculos precisos (TimeZone local)
-        const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
-        const todayObj = new Date(todayStr);
-        const todayTime = todayObj.getTime();
+        const now = new Date();
+        const todayStr = now.toLocaleDateString('en-CA'); // YYYY-MM-DD
+        const todayTime = new Date(todayStr).getTime();
         
-        const dayOfWeek = todayObj.getDay();
+        const dayOfWeek = now.getDay();
         const daysToNextMonday = dayOfWeek === 0 ? 1 : 8 - dayOfWeek;
         const nextWeekTime = todayTime + (daysToNextMonday * 24 * 60 * 60 * 1000);
         const nextNextWeekTime = nextWeekTime + (7 * 24 * 60 * 60 * 1000);
