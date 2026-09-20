@@ -5859,7 +5859,12 @@
              return `<div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-left: 3px solid var(--accent-amber); border-radius: 4px; padding: 0.75rem;">
                  <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div style="font-weight: 700; color: var(--text-main);"><i class="fa-solid fa-receipt"></i> Pedido nº ${h.orderNumber || '?'}</div>
-                    <div style="color: var(--accent-green); font-weight: 800;">${formatCurrency(h.totalValue)}</div>
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <div style="color: var(--accent-green); font-weight: 800;">${formatCurrency(h.totalValue)}</div>
+                        <button type="button" class="btn btn-secondary btn-icon-only" title="Excluir do Histórico" onclick="IntelligenceApp.deletePurchaseHistory('${client.id}', '${h.id}')" style="padding: 2px 6px; font-size: 0.8rem; border: none; color: var(--accent-red); background: transparent;">
+                           <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
                  </div>
                  <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">
                     <i class="fa-regular fa-calendar"></i> Realizado em: ${formatDate(h.date, true)}
@@ -5867,6 +5872,16 @@
                  ${itemsHtml}
              </div>`;
          }).join('');
+      },
+      
+      deletePurchaseHistory(clientId, purchaseId) {
+          if (!confirm("Tem certeza que deseja excluir este pedido do histórico de inteligência?")) return;
+          const c = ClientApp.getById(clientId);
+          if (!c || !c.purchaseHistory) return;
+          c.purchaseHistory = c.purchaseHistory.filter(p => p.id !== purchaseId);
+          FirebaseEngine.syncClient(c);
+          showToast('Pedido removido do histórico de compras.', 'success');
+          this.renderDashboard(c);
       }
     };
 
