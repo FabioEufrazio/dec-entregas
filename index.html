@@ -3601,14 +3601,22 @@
             const isCurrent = idx === history.length - 1 && o.active !== false;
             const duration = step.durationMs ? formatDuration(step.durationMs) : (isCurrent ? formatDuration(Date.now() - new Date(step.enteredAt).getTime()) + ' (em andamento)' : '-');
 
+            const canDelete = idx > 0;
+            const deleteBtn = canDelete ? `
+              <button type="button" onclick="OrderApp.deleteTimelineStep('${orderId}', ${idx})" title="Excluir Transição (Reverter Status)" style="background: transparent; border: none; color: var(--accent-red); cursor: pointer; padding: 2px 6px; margin-left: auto; border-radius: 4px;">
+                <i class="fa-solid fa-trash-can"></i> Excluir
+              </button>
+            ` : '';
+
             return `
               <div class="timeline-step ${isCurrent ? 'current' : 'completed'}">
                 <div class="timeline-dot"></div>
                 <div class="timeline-title"><i class="fa-solid ${st.icon}" style="color: ${st.color || 'var(--accent-blue)'};"></i> ${st.name}</div>
-                <div class="timeline-meta">
-                  <span><i class="fa-regular fa-clock"></i> Início: ${formatDate(step.enteredAt, true)}</span>
-                  ${step.leftAt ? `<span>| Fim: ${formatDate(step.leftAt, true)}</span>` : ''}
+                <div class="timeline-meta" style="display: flex; align-items: center; flex-wrap: wrap; width: 100%;">
+                  <span style="margin-right: 8px;"><i class="fa-regular fa-clock"></i> Início: ${formatDate(step.enteredAt, true)}</span>
+                  ${step.leftAt ? `<span style="margin-right: 8px;">| Fim: ${formatDate(step.leftAt, true)}</span>` : ''}
                   <span class="timeline-duration-badge"><i class="fa-solid fa-stopwatch"></i> ${duration}</span>
+                  ${deleteBtn}
                 </div>
               </div>
             `;
@@ -3616,6 +3624,43 @@
         }
 
         ModalEngine.open('timeline-modal');
+      },
+
+      deleteTimelineStep(orderId, index) {
+        if (!confirm('Tem certeza que deseja excluir esta transição?\n\nSe for o status atual, o pedido retornará ao status anterior.')) return;
+        
+        const o = this.getById(orderId);
+        if (!o || !o.statusHistory || !o.statusHistory[index]) return;
+        if (index === 0) {
+          showToast('Não é possível excluir o status inicial.', 'error');
+          return;
+        }
+        
+        const isCurrent = (index === o.statusHistory.length - 1);
+        
+        // Remove from history
+        o.statusHistory.splice(index, 1);
+        
+        if (isCurrent && o.statusHistory.length > 0) {
+          // If it was the current status, we must resume the previous status
+          const prev = o.statusHistory[o.statusHistory.length - 1];
+          delete prev.leftAt;
+          delete prev.durationMs;
+          o.currentStatus = prev.status;
+        } else if (!isCurrent) {
+          // If it was an intermediate status, bridge the gap
+          const prev = o.statusHistory[index - 1];
+          const next = o.statusHistory[index];
+          if (prev && next) {
+             prev.leftAt = next.enteredAt;
+             prev.durationMs = new Date(prev.leftAt).getTime() - new Date(prev.enteredAt).getTime();
+          }
+        }
+        
+        FirebaseEngine.syncOrder(o);
+        showToast('Transição excluída com sucesso!');
+        this.viewTimeline(orderId);
+        this.render(); // Update main board
       },
 
       handleSearch(val) {
