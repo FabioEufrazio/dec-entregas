@@ -1407,6 +1407,30 @@
   </div>
 
   <!-- ==========================================================================
+       MODAL: EDITAR OBSERVAÇÃO
+       ========================================================================== -->
+  <div class="modal-overlay" id="edit-obs-modal" style="z-index: 2000;">
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-header">
+        <h2><i class="fa-solid fa-pen" style="color: var(--accent-blue);"></i> Editar Observação</h2>
+        <button class="modal-close-btn" onclick="ModalEngine.close('edit-obs-modal')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="edit-obs-order-id">
+        <input type="hidden" id="edit-obs-index">
+        <div class="form-group">
+          <label class="form-label">Texto da Observação</label>
+          <textarea id="edit-obs-textarea" class="form-textarea" rows="4" style="width: 100%; box-sizing: border-box;"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="ModalEngine.close('edit-obs-modal')">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="OrderApp.saveObservation()">Salvar Alteração</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
        MODAL 3: CONFIRMAÇÃO DE PEDIDO ENTREGUE
        ========================================================================== -->
   <div class="modal-overlay" id="confirm-delivered-modal">
@@ -3202,33 +3226,28 @@
         const o = this.getById(orderId);
         if (!o || !o.observationHistory || !o.observationHistory[index]) return;
         
-        const currentText = escapeHtml(o.observationHistory[index].text);
-        const textContainer = document.getElementById(`obs-text-${index}`);
-        if (!textContainer) return;
+        document.getElementById('edit-obs-order-id').value = orderId;
+        document.getElementById('edit-obs-index').value = index;
+        document.getElementById('edit-obs-textarea').value = o.observationHistory[index].text;
         
-        textContainer.innerHTML = `
-          <textarea id="obs-edit-input-${index}" class="form-textarea" style="margin-top: 8px; margin-bottom: 8px; width: 100%; box-sizing: border-box; background: var(--bg-body);" rows="3">${currentText}</textarea>
-          <div style="display: flex; gap: 6px; justify-content: flex-end;">
-             <button type="button" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="OrderApp.openEditModal('${orderId}')">Cancelar</button>
-             <button type="button" class="btn btn-primary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="OrderApp.saveObservation('${orderId}', ${index})">Salvar</button>
-          </div>
-        `;
+        ModalEngine.open('edit-obs-modal');
       },
 
-      saveObservation(orderId, index) {
+      saveObservation() {
+        const orderId = document.getElementById('edit-obs-order-id').value;
+        const index = parseInt(document.getElementById('edit-obs-index').value, 10);
+        
         const o = this.getById(orderId);
         if (!o || !o.observationHistory || !o.observationHistory[index]) return;
         
-        const input = document.getElementById(`obs-edit-input-${index}`);
-        if (!input) return;
-        
-        const newText = input.value.trim();
+        const newText = document.getElementById('edit-obs-textarea').value.trim();
         if (newText && newText !== o.observationHistory[index].text) {
           o.observationHistory[index].text = newText;
           FirebaseEngine.syncOrder(o);
           showToast('Observação atualizada com sucesso!');
         }
-        this.openEditModal(orderId);
+        ModalEngine.close('edit-obs-modal');
+        this.openEditModal(orderId); // Re-renderiza o modal de edição do pedido
       },
 
       deleteObservation(orderId, index) {
