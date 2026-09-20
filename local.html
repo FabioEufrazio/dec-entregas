@@ -1358,6 +1358,9 @@
           <div class="form-group">
             <label class="form-label">Nova Observação / Registro</label>
             <textarea class="form-textarea" id="form-order-new-note" rows="2" placeholder="Digite uma nova observação ou nota para o pedido..."></textarea>
+            <div style="text-align: right; margin-top: 5px;">
+               <button type="button" class="btn btn-primary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="OrderApp.addObservationInstantly()"><i class="fa-solid fa-plus"></i> Adicionar Observação</button>
+            </div>
             
             <div id="form-order-notes-history-container" style="margin-top: 1rem; display: none;">
               <h4 style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">Histórico de Observações:</h4>
@@ -3187,6 +3190,31 @@
 
         const historyContainer = document.getElementById('form-order-notes-history-container');
         const historyList = document.getElementById('form-order-notes-history');
+        this.renderObservationHistory(orderId);
+
+        // Seleciona o cliente no buscador
+        ClientPicker.select('order', o.clientId);
+
+        const container = document.getElementById('branch-orders-fields-container');
+        container.innerHTML = '';
+        if (o.branchOrders && o.branchOrders.length > 0) {
+          o.branchOrders.forEach(b => this.addBranchOrderField(b.number || b, b.value || ''));
+        } else if (o.orderNumbers && o.orderNumbers.length > 0) {
+          o.orderNumbers.forEach(num => this.addBranchOrderField(num, ''));
+        } else {
+          this.addBranchOrderField();
+        }
+
+        ModalEngine.open('order-modal');
+      },
+
+      renderObservationHistory(orderId) {
+        const o = this.getById(orderId);
+        if (!o) return;
+        
+        const historyContainer = document.getElementById('form-order-notes-history-container');
+        const historyList = document.getElementById('form-order-notes-history');
+        
         if (o.observationHistory && o.observationHistory.length > 0) {
           historyContainer.style.display = 'block';
           historyList.innerHTML = o.observationHistory.map((obs, idx) => `
@@ -3205,21 +3233,32 @@
           historyContainer.style.display = 'none';
           historyList.innerHTML = '';
         }
+      },
 
-        // Seleciona o cliente no buscador
-        ClientPicker.select('order', o.clientId);
-
-        const container = document.getElementById('branch-orders-fields-container');
-        container.innerHTML = '';
-        if (o.branchOrders && o.branchOrders.length > 0) {
-          o.branchOrders.forEach(b => this.addBranchOrderField(b.number || b, b.value || ''));
-        } else if (o.orderNumbers && o.orderNumbers.length > 0) {
-          o.orderNumbers.forEach(num => this.addBranchOrderField(num, ''));
-        } else {
-          this.addBranchOrderField();
+      addObservationInstantly() {
+        const orderId = document.getElementById('form-order-id').value;
+        if (!orderId) {
+          showToast('Salve o pedido pela primeira vez antes de adicionar observações instântaneas.', 'error');
+          return;
         }
 
-        ModalEngine.open('order-modal');
+        const o = this.getById(orderId);
+        if (!o) return;
+
+        const newNote = document.getElementById('form-order-new-note').value.trim();
+        if (!newNote) {
+          showToast('Digite uma observação antes de adicionar.', 'error');
+          return;
+        }
+
+        o.observationHistory = o.observationHistory || [];
+        o.observationHistory.unshift({ date: new Date().toISOString(), text: newNote });
+        
+        FirebaseEngine.syncOrder(o);
+        document.getElementById('form-order-new-note').value = '';
+        
+        showToast('Observação adicionada!');
+        this.renderObservationHistory(orderId);
       },
 
       editObservation(orderId, index) {
@@ -3247,7 +3286,7 @@
           showToast('Observação atualizada com sucesso!');
         }
         ModalEngine.close('edit-obs-modal');
-        this.openEditModal(orderId); // Re-renderiza o modal de edição do pedido
+        this.renderObservationHistory(orderId);
       },
 
       deleteObservation(orderId, index) {
@@ -3258,7 +3297,7 @@
           o.observationHistory.splice(index, 1);
           FirebaseEngine.syncOrder(o);
           showToast('Observação excluída com sucesso!');
-          this.openEditModal(orderId); // Re-renderiza o modal
+          this.renderObservationHistory(orderId);
         }
       },
 
