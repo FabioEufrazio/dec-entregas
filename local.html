@@ -5755,6 +5755,23 @@
         return fullText;
       },
 
+      parseCurrency(str) {
+        if (!str) return 0;
+        if (str.includes(',') && str.includes('.')) {
+          const lastComma = str.lastIndexOf(',');
+          const lastDot = str.lastIndexOf('.');
+          if (lastDot > lastComma) {
+            return parseFloat(str.replace(/,/g, ''));
+          } else {
+            return parseFloat(str.replace(/\./g, '').replace(',', '.'));
+          }
+        } else if (str.includes(',')) {
+          return parseFloat(str.replace(',', '.'));
+        } else {
+          return parseFloat(str);
+        }
+      },
+
       parseIonOrderText(text) {
         // Regex para Número do Pedido
         const orderNumberMatch = text.match(/N[úu]mero do Pedido:\s*(\d+)/i);
@@ -5776,23 +5793,23 @@
         let totalValue = 0;
         const totalMatch = text.match(/Total\s+\d+\s+R\$\s*([\d\.,]+)/i);
         if (totalMatch) {
-            totalValue = parseFloat(totalMatch[1].replace(/\./g, '').replace(',', '.'));
+            totalValue = this.parseCurrency(totalMatch[1]);
         }
 
         const items = [];
-        // Captura algo como: 1 94148 VODKA NAC SMIRNOFF 998ML-GF CX-12 17893218000470 48 R$ 32.98 R$ 1,583.04
-        const itemRegex = /(\d+)\s+([A-Z0-9\s-\/]+?)\s+([A-Z]{2,4}-?\d*)\s+(\d{7,14})\s+(\d+)\s+R\$\s*([\d\.,]+)\s+R\$\s*([\d\.,]+)/ig;
+        // Use loose regex: Descrição, Unidade, EAN, QTD, Valor, Total
+        const itemRegex = /([A-Z0-9\s-\/\.]+?)\s+(CX-\d+|UN|KG|PCT|CX)\s+(\d{7,14})\s+(\d+)\s+(?:R\$)?\s*([\d\.,]+)\s+(?:R\$)?\s*([\d\.,]+)/ig;
         let match;
         // Limpar um pouco de espaços duplicados
         const cleanText = text.replace(/\s{2,}/g, ' ');
         
         while ((match = itemRegex.exec(cleanText)) !== null) {
             items.push({
-               code: match[1],
-               desc: match[2].trim(),
-               qty: parseInt(match[5], 10),
-               unitPrice: parseFloat(match[6].replace(/\./g, '').replace(',', '.')),
-               total: parseFloat(match[7].replace(/\./g, '').replace(',', '.'))
+               code: 'N/A', // Ignorando o index/codigo inicial
+               desc: match[1].trim(),
+               qty: parseInt(match[4], 10),
+               unitPrice: this.parseCurrency(match[5]),
+               total: this.parseCurrency(match[6])
             });
         }
         
