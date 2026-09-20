@@ -5828,19 +5828,19 @@
         }
 
         const items = [];
-        // Use loose regex: Descrição, Unidade, EAN, QTD, Valor, Total
-        const itemRegex = /([A-Z0-9\s-\/\.]+?)\s+(CX-\d+|UN|KG|PCT|CX)\s+(\d{7,14})\s+(\d+)\s+(?:R\$)?\s*([\d\.,]+)\s+(?:R\$)?\s*([\d\.,]+)/ig;
+        // Use loose regex: Index, Codigo, Descrição, Unidade, EAN, QTD, Valor, Total
+        const itemRegex = /(?:^|\s)(\d+)\s+(\d+)\s+([a-zA-Z0-9À-ÿ\s\-\/\.\(\),]+?)\s+([a-zA-Z]{2,4}-?\d*)\s+(\d{7,14})\s+(\d+)\s+(?:R\$\s*)?([\d\.,]+)\s+(?:R\$\s*)?([\d\.,]+)/ig;
         let match;
         // Limpar um pouco de espaços duplicados
         const cleanText = text.replace(/\s{2,}/g, ' ');
         
         while ((match = itemRegex.exec(cleanText)) !== null) {
             items.push({
-               code: 'N/A', // Ignorando o index/codigo inicial
-               desc: match[1].trim(),
-               qty: parseInt(match[4], 10),
-               unitPrice: this.parseCurrency(match[5]),
-               total: this.parseCurrency(match[6])
+               code: match[2],
+               desc: match[3].trim(),
+               qty: parseInt(match[6], 10),
+               unitPrice: this.parseCurrency(match[7]),
+               total: this.parseCurrency(match[8])
             });
         }
         
