@@ -3165,9 +3165,15 @@
         const historyList = document.getElementById('form-order-notes-history');
         if (o.observationHistory && o.observationHistory.length > 0) {
           historyContainer.style.display = 'block';
-          historyList.innerHTML = o.observationHistory.map(obs => `
+          historyList.innerHTML = o.observationHistory.map((obs, idx) => `
             <div style="background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-left: 2px solid var(--accent-blue); padding: 0.5rem; border-radius: 4px; font-size: 0.8rem; color: var(--text-muted);">
-              <div style="font-size: 0.7rem; color: #64748b; margin-bottom: 2px;"><i class="fa-regular fa-clock"></i> ${new Date(obs.date).toLocaleString('pt-BR')}</div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                <div style="font-size: 0.7rem; color: #64748b;"><i class="fa-regular fa-clock"></i> ${new Date(obs.date).toLocaleString('pt-BR')}</div>
+                <div style="display: flex; gap: 4px;">
+                  <button type="button" class="btn btn-secondary btn-icon-only" style="padding: 2px 4px; height: auto; min-width: unset; color: var(--text-muted); background: transparent; border: none;" onclick="OrderApp.editObservation('${orderId}', ${idx})" title="Editar Observação"><i class="fa-solid fa-pen"></i></button>
+                  <button type="button" class="btn btn-danger btn-icon-only" style="padding: 2px 4px; height: auto; min-width: unset; color: var(--accent-red); background: transparent; border: none;" onclick="OrderApp.deleteObservation('${orderId}', ${idx})" title="Excluir Observação"><i class="fa-solid fa-trash"></i></button>
+                </div>
+              </div>
               <div style="white-space: pre-line; color: var(--text-main);">${escapeHtml(obs.text)}</div>
             </div>
           `).join('');
@@ -3190,6 +3196,33 @@
         }
 
         ModalEngine.open('order-modal');
+      },
+
+      editObservation(orderId, index) {
+        const o = this.getById(orderId);
+        if (!o || !o.observationHistory || !o.observationHistory[index]) return;
+        
+        const currentText = o.observationHistory[index].text;
+        const newText = prompt('Editar observação:', currentText);
+        
+        if (newText !== null && newText.trim() !== '' && newText !== currentText) {
+          o.observationHistory[index].text = newText.trim();
+          FirebaseEngine.syncOrder(o);
+          showToast('Observação atualizada com sucesso!');
+          this.openEditModal(orderId); // Re-renderiza o modal
+        }
+      },
+
+      deleteObservation(orderId, index) {
+        const o = this.getById(orderId);
+        if (!o || !o.observationHistory || !o.observationHistory[index]) return;
+        
+        if (confirm('Tem certeza que deseja excluir esta observação do histórico?')) {
+          o.observationHistory.splice(index, 1);
+          FirebaseEngine.syncOrder(o);
+          showToast('Observação excluída com sucesso!');
+          this.openEditModal(orderId); // Re-renderiza o modal
+        }
       },
 
       saveFromForm(event) {
