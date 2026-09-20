@@ -3174,7 +3174,7 @@
                   <button type="button" class="btn btn-danger btn-icon-only" style="padding: 2px 4px; height: auto; min-width: unset; color: var(--accent-red); background: transparent; border: none;" onclick="OrderApp.deleteObservation('${orderId}', ${idx})" title="Excluir Observação"><i class="fa-solid fa-trash"></i></button>
                 </div>
               </div>
-              <div style="white-space: pre-line; color: var(--text-main);">${escapeHtml(obs.text)}</div>
+              <div id="obs-text-${idx}" style="white-space: pre-line; color: var(--text-main);">${escapeHtml(obs.text)}</div>
             </div>
           `).join('');
         } else {
@@ -3202,15 +3202,33 @@
         const o = this.getById(orderId);
         if (!o || !o.observationHistory || !o.observationHistory[index]) return;
         
-        const currentText = o.observationHistory[index].text;
-        const newText = prompt('Editar observação:', currentText);
+        const currentText = escapeHtml(o.observationHistory[index].text);
+        const textContainer = document.getElementById(`obs-text-${index}`);
+        if (!textContainer) return;
         
-        if (newText !== null && newText.trim() !== '' && newText !== currentText) {
-          o.observationHistory[index].text = newText.trim();
+        textContainer.innerHTML = `
+          <textarea id="obs-edit-input-${index}" class="form-textarea" style="margin-top: 8px; margin-bottom: 8px; width: 100%; box-sizing: border-box; background: var(--bg-body);" rows="3">${currentText}</textarea>
+          <div style="display: flex; gap: 6px; justify-content: flex-end;">
+             <button type="button" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="OrderApp.openEditModal('${orderId}')">Cancelar</button>
+             <button type="button" class="btn btn-primary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="OrderApp.saveObservation('${orderId}', ${index})">Salvar</button>
+          </div>
+        `;
+      },
+
+      saveObservation(orderId, index) {
+        const o = this.getById(orderId);
+        if (!o || !o.observationHistory || !o.observationHistory[index]) return;
+        
+        const input = document.getElementById(`obs-edit-input-${index}`);
+        if (!input) return;
+        
+        const newText = input.value.trim();
+        if (newText && newText !== o.observationHistory[index].text) {
+          o.observationHistory[index].text = newText;
           FirebaseEngine.syncOrder(o);
           showToast('Observação atualizada com sucesso!');
-          this.openEditModal(orderId); // Re-renderiza o modal
         }
+        this.openEditModal(orderId);
       },
 
       deleteObservation(orderId, index) {
