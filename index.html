@@ -14,6 +14,7 @@
   
   <!-- Bibliotecas de PDF e Firebase -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -1597,6 +1598,28 @@
   <!-- ==========================================================================
        MODAL 4: GESTÃO DE CLIENTES (CRM, BUSCA CNPJ & BACKUP)
        ========================================================================== -->
+  <!-- ==========================================================================
+       MODAL TAREFA DETALHES
+       ========================================================================== -->
+  <div class="modal-overlay" id="task-details-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2><i class="fa-solid fa-circle-info" style="color: #38bdf8;"></i> Detalhes da Tarefa</h2>
+        <div style="display: flex; gap: 8px;">
+          <button id="task-details-edit-btn" class="btn btn-secondary btn-icon-only" style="color: #a855f7; border: 1px solid #475569;" title="Editar">
+            <i class="fa-solid fa-pen"></i>
+          </button>
+          <button class="btn btn-secondary btn-icon-only" onclick="ModalEngine.close('task-details-modal')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div id="task-details-content" style="background: #1e293b; border: 1px solid #334155; padding: 15px; border-radius: 8px; font-size: 0.95rem; line-height: 1.5; color: #f8fafc; text-align: left;">
+          <!-- renderizado via JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="clients-modal">
     <div class="modal-card modal-lg">
       <div class="modal-header">
@@ -1620,6 +1643,9 @@
               <i class="fa-solid fa-file-import"></i> Importar Backup
               <input type="file" accept=".json" style="display: none;" onchange="ClientApp.importBackup(event)">
             </label>
+            <button class="btn btn-primary" onclick="ModalEngine.open('global-intelligence-modal')" title="Extrair dados de PDF automaticamente e vincular ao cliente">
+              <i class="fa-solid fa-robot"></i> Inteligência / Leitor PDF
+            </button>
             <button class="btn btn-purple" onclick="ClientApp.openForm()">
               <i class="fa-solid fa-user-plus"></i> Novo Cliente
             </button>
@@ -1773,6 +1799,7 @@
         <div style="display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 1rem;">
           <button id="tab-btn-orders" onclick="ClientApp.switchTab('orders')" style="padding: 0.6rem 1.2rem; background: transparent; border: none; border-bottom: 2px solid var(--accent-amber); color: var(--accent-amber); cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s;"><i class="fa-solid fa-boxes-stacked"></i> Pedidos</button>
           <button id="tab-btn-tasks" onclick="ClientApp.switchTab('tasks')" style="padding: 0.6rem 1.2rem; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s;"><i class="fa-solid fa-calendar-check"></i> Agenda / Histórico</button>
+          <button id="tab-btn-intelligence" onclick="ClientApp.switchTab('intelligence')" style="padding: 0.6rem 1.2rem; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s;"><i class="fa-solid fa-brain"></i> Inteligência & Vendas</button>
         </div>
 
         <!-- Painel: Pedidos -->
@@ -1802,11 +1829,87 @@
             <!-- Tarefas renderizadas via JS -->
           </div>
         </div>
+
+        <!-- Painel: Inteligência & Vendas -->
+        <div id="tab-panel-intelligence" style="display: none;">
+          <div style="background: var(--bg-input); padding: 1.5rem; border-radius: var(--radius-sm); border: 1px dashed var(--border); text-align: center; margin-bottom: 1rem;">
+            <i class="fa-solid fa-file-pdf" style="font-size: 2rem; color: var(--accent-red); margin-bottom: 0.5rem;"></i>
+            <h4 style="margin-bottom: 0.5rem; color: var(--text-main);">Analisar Pedido (PDF)</h4>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Faça o upload do pedido de venda para extrair os dados automaticamente.</p>
+            <input type="file" id="intelligence-pdf-upload" accept="application/pdf" style="display: none;" onchange="IntelligenceApp.handlePdfUpload(event)">
+            <input type="hidden" id="intelligence-client-id">
+            <button type="button" class="btn btn-primary" onclick="document.getElementById('intelligence-pdf-upload').click()"><i class="fa-solid fa-upload"></i> Selecionar PDF</button>
+            <div id="intelligence-upload-status" style="font-size: 0.75rem; color: var(--accent-amber); margin-top: 0.5rem; display: none;"><i class="fa-solid fa-circle-notch fa-spin"></i> Lendo documento...</div>
+          </div>
+          
+          <div id="intelligence-dashboard" style="display: none;">
+             <h4 style="font-size: 0.9rem; font-weight: 700; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 0.75rem;">Histórico de Compras</h4>
+             <div id="intelligence-history-list" style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 250px; overflow-y: auto;">
+             </div>
+          </div>
+        </div>
       </div>
 
       <div class="modal-footer">
         <div></div>
         <button type="button" class="btn btn-secondary" onclick="ModalEngine.close('client-orders-history-modal')">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL: INTELIGÊNCIA GLOBAL (UPLOAD DE PDF SOLTO)
+       ========================================================================== -->
+  <div class="modal-overlay" id="global-intelligence-modal" style="z-index: 2000;">
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-header">
+        <h2><i class="fa-solid fa-robot" style="color: var(--accent-blue);"></i> Processar Pedido (Leitor Inteligente)</h2>
+        <button class="modal-close-btn" onclick="ModalEngine.close('global-intelligence-modal')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body" style="text-align: center;">
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">O sistema fará a leitura do PDF e buscará automaticamente o cliente dono do pedido usando Código, CNPJ ou Nome.</p>
+        <div style="background: var(--bg-input); padding: 2rem; border-radius: var(--radius-sm); border: 2px dashed var(--border); margin-bottom: 1rem;">
+          <i class="fa-solid fa-cloud-arrow-up" style="font-size: 3rem; color: var(--accent-amber); margin-bottom: 1rem;"></i>
+          <h4 style="margin-bottom: 0.5rem; color: var(--text-main);">Arraste ou Selecione o PDF</h4>
+          <input type="file" id="global-intelligence-pdf-upload" accept="application/pdf" style="display: none;" onchange="IntelligenceApp.handleGlobalPdfUpload(event)">
+          <button type="button" class="btn btn-primary" onclick="document.getElementById('global-intelligence-pdf-upload').click()"><i class="fa-solid fa-upload"></i> Selecionar Arquivo PDF</button>
+          <div id="global-intelligence-upload-status" style="font-size: 0.8rem; margin-top: 1rem; display: none;"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="ModalEngine.close('global-intelligence-modal')">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL: ITENS DO PEDIDO (INTELIGÊNCIA)
+       ========================================================================== -->
+  <div class="modal-overlay" id="view-purchase-items-modal" style="z-index: 2100;">
+    <div class="modal-card" style="max-width: 600px;">
+      <div class="modal-header">
+        <h2 id="purchase-items-modal-title"><i class="fa-solid fa-box-open" style="color: var(--accent-blue);"></i> Itens do Pedido</h2>
+        <button class="modal-close-btn" onclick="ModalEngine.close('view-purchase-items-modal')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+        <table class="table" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+          <thead>
+            <tr>
+              <th style="text-align: left; padding: 8px; border-bottom: 1px solid var(--border); color: var(--text-dim);">Cód.</th>
+              <th style="text-align: center; padding: 8px; border-bottom: 1px solid var(--border); color: var(--text-dim);">Qtd</th>
+              <th style="text-align: left; padding: 8px; border-bottom: 1px solid var(--border); color: var(--text-dim);">Produto</th>
+              <th style="text-align: right; padding: 8px; border-bottom: 1px solid var(--border); color: var(--text-dim);">V. Unit</th>
+              <th style="text-align: right; padding: 8px; border-bottom: 1px solid var(--border); color: var(--text-dim);">Total</th>
+            </tr>
+          </thead>
+          <tbody id="purchase-items-list-body">
+            <!-- Render via JS -->
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+        <div id="purchase-items-total" style="font-size: 1.1rem; font-weight: 800; color: var(--accent-green);"></div>
+        <button type="button" class="btn btn-secondary" onclick="ModalEngine.close('view-purchase-items-modal')">Fechar</button>
       </div>
     </div>
   </div>
@@ -2780,20 +2883,31 @@
       },
 
       switchTab(tab) {
-        const ordersPanel = document.getElementById('tab-panel-orders');
-        const tasksPanel = document.getElementById('tab-panel-tasks');
-        const ordersBtn = document.getElementById('tab-btn-orders');
-        const tasksBtn = document.getElementById('tab-btn-tasks');
+        const pOrders = document.getElementById('tab-panel-orders');
+        const pTasks = document.getElementById('tab-panel-tasks');
+        const pIntel = document.getElementById('tab-panel-intelligence');
+        
+        const btnOrders = document.getElementById('tab-btn-orders');
+        const btnTasks = document.getElementById('tab-btn-tasks');
+        const btnIntel = document.getElementById('tab-btn-intelligence');
+
+        if(pOrders) pOrders.style.display = 'none';
+        if(pTasks) pTasks.style.display = 'none';
+        if(pIntel) pIntel.style.display = 'none';
+        
+        if(btnOrders) { btnOrders.style.borderBottomColor = 'transparent'; btnOrders.style.color = 'var(--text-muted)'; }
+        if(btnTasks) { btnTasks.style.borderBottomColor = 'transparent'; btnTasks.style.color = 'var(--text-muted)'; }
+        if(btnIntel) { btnIntel.style.borderBottomColor = 'transparent'; btnIntel.style.color = 'var(--text-muted)'; }
+
         if (tab === 'orders') {
-          if(ordersPanel) ordersPanel.style.display = '';
-          if(tasksPanel) tasksPanel.style.display = 'none';
-          if(ordersBtn){ ordersBtn.style.borderBottomColor = 'var(--accent-amber)'; ordersBtn.style.color = 'var(--accent-amber)'; }
-          if(tasksBtn){ tasksBtn.style.borderBottomColor = 'transparent'; tasksBtn.style.color = 'var(--text-muted)'; }
-        } else {
-          if(ordersPanel) ordersPanel.style.display = 'none';
-          if(tasksPanel) tasksPanel.style.display = '';
-          if(tasksBtn){ tasksBtn.style.borderBottomColor = 'var(--accent-purple)'; tasksBtn.style.color = 'var(--accent-purple)'; }
-          if(ordersBtn){ ordersBtn.style.borderBottomColor = 'transparent'; ordersBtn.style.color = 'var(--text-muted)'; }
+          if(pOrders) pOrders.style.display = 'block';
+          if(btnOrders) { btnOrders.style.borderBottomColor = 'var(--accent-amber)'; btnOrders.style.color = 'var(--accent-amber)'; }
+        } else if (tab === 'tasks') {
+          if(pTasks) pTasks.style.display = 'block';
+          if(btnTasks) { btnTasks.style.borderBottomColor = 'var(--accent-purple)'; btnTasks.style.color = 'var(--accent-purple)'; }
+        } else if (tab === 'intelligence') {
+          if(pIntel) pIntel.style.display = 'block';
+          if(btnIntel) { btnIntel.style.borderBottomColor = 'var(--accent-blue)'; btnIntel.style.color = 'var(--accent-blue)'; }
         }
       },
 
@@ -2852,6 +2966,14 @@
         const totalSpent = clientOrders.reduce((sum, o) => sum + (Number(o.totalValue) || 0), 0);
         const openTasks = clientTasks.filter(t => !t.completed).length;
         const doneTasks = clientTasks.filter(t => t.completed).length;
+
+        // Store Client ID for Intelligence upload
+        const intelInput = document.getElementById('intelligence-client-id');
+        if (intelInput) intelInput.value = clientId;
+        // Render inteligence dashboard for this client
+        if (typeof IntelligenceApp !== 'undefined') {
+           IntelligenceApp.renderDashboard(c);
+        }
 
         const summaryBox = document.getElementById('client-orders-summary-box');
         if (summaryBox) {
@@ -4997,7 +5119,58 @@
           ModalEngine.open('edit-task-modal');
         },
 
-        editTask(id) {
+        viewTaskDetails(id) {
+        const task = this.tasks.find(t => String(t.id) === String(id));
+        if (!task) return;
+        
+        let clientHtml = '';
+        if (task.clientId) {
+          const client = ClientApp.getById(task.clientId);
+          if (client) {
+            clientHtml = `
+              <div style="margin-bottom: 12px;">
+                <span style="color: #94a3b8; font-size: 0.85rem; display: block; margin-bottom: 2px;">Cliente:</span>
+                <span style="color: #38bdf8; font-weight: 600;"><i class="fa-solid fa-user"></i> ${client.nomeFantasia}</span>
+              </div>
+            `;
+          }
+        }
+
+        let dateObj = new Date(task.date + 'T12:00:00');
+        let displayDate = dateObj.toLocaleDateString('pt-BR');
+
+        const content = document.getElementById('task-details-content');
+        if (content) {
+          content.innerHTML = `
+            <div style="margin-bottom: 15px;">
+              <span style="color: #94a3b8; font-size: 0.85rem; display: block; margin-bottom: 4px;">Descrição:</span>
+              <strong style="font-size: 1.1rem;">${task.description || ''}</strong>
+            </div>
+            ${clientHtml}
+            <div style="margin-bottom: 12px;">
+              <span style="color: #94a3b8; font-size: 0.85rem; display: block; margin-bottom: 2px;">Data Agendada:</span>
+              <span><i class="fa-regular fa-calendar" style="color: #3b82f6;"></i> ${displayDate}</span>
+            </div>
+            ${task.observation ? `
+            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #334155;">
+              <span style="color: #94a3b8; font-size: 0.85rem; display: block; margin-bottom: 4px;">Observações:</span>
+              <div style="white-space: pre-wrap;">${task.observation}</div>
+            </div>` : ''}
+          `;
+        }
+
+        const editBtn = document.getElementById('task-details-edit-btn');
+        if (editBtn) {
+          editBtn.onclick = () => {
+            ModalEngine.close('task-details-modal');
+            TaskApp.editTask(id);
+          };
+        }
+
+        ModalEngine.open('task-details-modal');
+      },
+
+      editTask(id) {
         const task = this.tasks.find(t => String(t.id) === String(id));
         if (!task) return;
         
@@ -5194,7 +5367,7 @@
           if (t.clientId) {
             const client = ClientApp.getById(t.clientId);
             if (client) {
-              clientHtml = `<div style="font-size: 0.8rem; color: #cbd5e1; margin-top: 4px;"><i class="fa-solid fa-user" style="color: #64748b; margin-right: 4px;"></i> <span onclick="ClientApp.viewOrdersHistory('${t.clientId}')" style="cursor: pointer; color: #38bdf8; text-decoration: underline;" title="Ver histórico do cliente">${client.nomeFantasia}</span> ${client.locationUrl ? `<a href="${client.locationUrl}" target="_blank" style="color: #ef4444; margin-left: 5px;"><i class="fa-solid fa-location-dot"></i></a>` : ''}</div>`;
+              clientHtml = `<div style="font-size: 0.8rem; color: #cbd5e1; margin-top: 4px;"><i class="fa-solid fa-user" style="color: #64748b; margin-right: 4px;"></i> <span onclick="event.stopPropagation(); ClientApp.viewOrdersHistory('${t.clientId}')" style="cursor: pointer; color: #38bdf8; text-decoration: underline;" title="Ver histórico do cliente">${client.nomeFantasia}</span> ${client.locationUrl ? `<a href="${client.locationUrl}" target="_blank" style="color: #ef4444; margin-left: 5px;"><i class="fa-solid fa-location-dot"></i></a>` : ''}</div>`;
             }
           }
           
@@ -5203,9 +5376,9 @@
           let isOverdue = new Date(t.date).getTime() < todayTime && t.date !== todayStr;
           
           return `
-            <div data-id="${t.id}" style="background: #2a364f; border: 1px solid #3b4b6b; border-radius: 8px; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3);  ${isOverdue ? 'border-left: 5px solid #ef4444;' : 'border-left: 5px solid #3b82f6;'}">
+            <div data-id="${t.id}" style="background: #2a364f; border: 1px solid #3b4b6b; border-radius: 8px; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; ${isOverdue ? 'border-left: 5px solid #ef4444;' : 'border-left: 5px solid #3b82f6;'}" onclick="TaskApp.viewTaskDetails('${t.id}')">
               <div style="display: flex; align-items: center; gap: 15px; flex: 1;">
-                <input type="checkbox" style="width: 20px; height: 20px; cursor: pointer; accent-color: #3b82f6; -webkit-appearance: auto; appearance: auto; ${t.completed ? 'display: none;' : ''}" onchange="TaskApp.toggleComplete('${t.id}')" ${t.completed ? 'checked' : ''}>
+                <input type="checkbox" style="width: 20px; height: 20px; cursor: pointer; accent-color: #3b82f6; -webkit-appearance: auto; appearance: auto; ${t.completed ? 'display: none;' : ''}" onclick="event.stopPropagation()" onchange="TaskApp.toggleComplete('${t.id}')" ${t.completed ? 'checked' : ''}>
                 <div>
                   <div style="font-weight: 600; color: #f8fafc; ${t.completed ? 'text-decoration: line-through; color: #94a3b8;' : ''}">${t.description}</div>
                   ${clientHtml}
@@ -5215,13 +5388,11 @@
                 </div>
               </div>
               <div style="display: flex; gap: 5px;">
-                ${t.completed ? `<button class="btn btn-secondary btn-icon-only" style="color: #f59e0b; border: none; background: transparent; box-shadow: none;" onclick="TaskApp.toggleComplete('${t.id}')" title="Reabrir Tarefa">
+                ${t.completed ? `<button class="btn btn-secondary btn-icon-only" style="color: #f59e0b; border: none; background: transparent; box-shadow: none;" onclick="event.stopPropagation(); TaskApp.toggleComplete('${t.id}')" title="Reabrir Tarefa">
                     <i class="fa-solid fa-rotate-left"></i>
                   </button>` : ''}
-                  <button class="btn btn-secondary btn-icon-only" style="color: #3b82f6; border: none; background: transparent; box-shadow: none;" onclick="TaskApp.editTask('${t.id}')" title="Editar">
-                  <i class="fa-solid fa-pen"></i>
-                </button>
-                <button class="btn btn-secondary btn-icon-only" style="color: #ef4444; border: none; background: transparent; box-shadow: none;" onclick="TaskApp.deleteTask('${t.id}')" title="Excluir">
+                  
+                <button class="btn btn-secondary btn-icon-only" style="color: #ef4444; border: none; background: transparent; box-shadow: none;" onclick="event.stopPropagation(); TaskApp.deleteTask('${t.id}')" title="Excluir">
                   <i class="fa-regular fa-trash-can"></i>
                 </button>
               </div>
@@ -5565,6 +5736,303 @@
         }
       });
     });
+
+    const IntelligenceApp = {
+      async handlePdfUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const clientId = document.getElementById('intelligence-client-id').value;
+        const c = ClientApp.getById(clientId);
+        if (!c) return;
+
+        document.getElementById('intelligence-upload-status').style.display = 'block';
+
+        try {
+          const text = await this.extractTextFromPdf(file);
+          const parsedData = this.parseIonOrderText(text);
+          
+          if (!parsedData || !parsedData.orderNumber) {
+            throw new Error('Não foi possível identificar os dados do pedido neste PDF. Verifique se o arquivo está correto.');
+          }
+
+          // Salvar no histórico de compras do cliente
+          c.purchaseHistory = c.purchaseHistory || [];
+          
+          // Verificar duplicidade
+          if (c.purchaseHistory.find(p => p.orderNumber === parsedData.orderNumber)) {
+            showToast('Este pedido já foi registrado no histórico!', 'error');
+          } else {
+            c.purchaseHistory.push(parsedData);
+            FirebaseEngine.syncClient(c);
+            showToast('Pedido analisado com sucesso!', 'success');
+          }
+
+          this.renderDashboard(c);
+        } catch (e) {
+          console.error(e);
+          showToast('Erro ao processar PDF: ' + e.message, 'error');
+        } finally {
+          document.getElementById('intelligence-upload-status').style.display = 'none';
+          event.target.value = ''; // reset input
+        }
+      },
+
+      async handleGlobalPdfUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const statusEl = document.getElementById('global-intelligence-upload-status');
+        statusEl.style.display = 'block';
+        statusEl.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processando documento e buscando cliente...';
+
+        try {
+          const text = await this.extractTextFromPdf(file);
+          
+          let foundClient = this.findClientInText(text);
+          if (!foundClient) {
+            throw new Error('Não foi possível identificar o cliente deste pedido (Código, CNPJ ou Nome ausentes no cadastro).');
+          }
+
+          const parsedData = this.parseIonOrderText(text);
+          if (!parsedData || !parsedData.orderNumber) {
+            throw new Error('Não foi possível extrair os dados de produtos neste PDF.');
+          }
+
+          foundClient.purchaseHistory = foundClient.purchaseHistory || [];
+          if (foundClient.purchaseHistory.find(p => p.orderNumber === parsedData.orderNumber)) {
+            statusEl.innerHTML = `<span style="color:var(--accent-red)"><i class="fa-solid fa-triangle-exclamation"></i> Este pedido já está no histórico de ${escapeHtml(foundClient.razaoSocial)}!</span>`;
+          } else {
+            foundClient.purchaseHistory.push(parsedData);
+            FirebaseEngine.syncClient(foundClient);
+            statusEl.innerHTML = `<span style="color:var(--accent-green)"><i class="fa-solid fa-check"></i> Sucesso! Pedido vinculado a <strong>${escapeHtml(foundClient.razaoSocial)}</strong>.</span>`;
+            
+            // Re-render dashboard se o modal do cliente estiver aberto
+            if (document.getElementById('intelligence-client-id').value === foundClient.id) {
+               this.renderDashboard(foundClient);
+            }
+          }
+        } catch (e) {
+          console.error(e);
+          statusEl.innerHTML = `<span style="color:var(--accent-red)"><i class="fa-solid fa-triangle-exclamation"></i> ${escapeHtml(e.message)}</span>`;
+        } finally {
+          event.target.value = ''; // reset input
+        }
+      },
+
+      findClientInText(text) {
+        if (!ClientApp || !ClientApp.data) return null;
+        const allClients = Object.values(ClientApp.data);
+        const upperText = text.toUpperCase();
+
+        for (const c of allClients) {
+          if (c.code && upperText.includes(c.code.toUpperCase())) return c;
+          
+          if (c.cnpj) {
+            const cleanCnpj = c.cnpj.replace(/\D/g, '');
+            if (cleanCnpj && text.replace(/\D/g, '').includes(cleanCnpj)) return c;
+          }
+          
+          if (c.razaoSocial && upperText.includes(c.razaoSocial.toUpperCase())) return c;
+          if (c.nomeFantasia && upperText.includes(c.nomeFantasia.toUpperCase())) return c;
+        }
+        return null;
+      },
+
+      async extractTextFromPdf(file) {
+        if (!window.pdfjsLib) {
+            throw new Error('Biblioteca PDF.js não carregada');
+        }
+        
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+        
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let fullText = '';
+        
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map(item => item.str).join(' ');
+          fullText += pageText + ' \n';
+        }
+        return fullText;
+      },
+
+      parseCurrency(str) {
+        if (!str) return 0;
+        if (str.includes(',') && str.includes('.')) {
+          const lastComma = str.lastIndexOf(',');
+          const lastDot = str.lastIndexOf('.');
+          if (lastDot > lastComma) {
+            return parseFloat(str.replace(/,/g, ''));
+          } else {
+            return parseFloat(str.replace(/\./g, '').replace(',', '.'));
+          }
+        } else if (str.includes(',')) {
+          return parseFloat(str.replace(',', '.'));
+        } else {
+          return parseFloat(str);
+        }
+      },
+
+      parseIonOrderText(text) {
+        // Regex para Número do Pedido
+        const orderNumberMatch = text.match(/N[úu]mero do Pedido:\s*(\d+)/i);
+        const orderNumber = orderNumberMatch ? orderNumberMatch[1] : null;
+
+        // Regex para data
+        const dateMatch = text.match(/Pedido feito em:\s*([\d\/]+\s[\d:]+)/i);
+        let dateStr = new Date().toISOString();
+        if (dateMatch) {
+            const parts = dateMatch[1].split(' ');
+            if (parts.length === 2) {
+               const dParts = parts[0].split('/');
+               if (dParts.length === 3) {
+                 dateStr = new Date(`${dParts[2]}-${dParts[1]}-${dParts[0]}T${parts[1]}:00`).toISOString();
+               }
+            }
+        }
+
+        let totalValue = 0;
+        const totalMatch = text.match(/Total\s+\d+\s+R\$\s*([\d\.,]+)/i);
+        if (totalMatch) {
+            totalValue = this.parseCurrency(totalMatch[1]);
+        }
+
+        const items = [];
+        // Analisador inteligente e flexível por linhas (resolve problemas de formatação ausente de unidades ou EANs)
+        const lines = text.split('\n');
+        for (const line of lines) {
+            const cleanLine = line.replace(/\s{2,}/g, ' ').trim();
+            if (!cleanLine) continue;
+            
+            // Ignora linhas de total
+            if (cleanLine.toLowerCase().startsWith('total')) continue;
+            
+            // Busca o padrão de dois preços no final da linha (ex: R$ 32,98 R$ 1.583,04)
+            const priceMatch = cleanLine.match(/(?:R\$\s*)?([\d\.,]+)\s+(?:R\$\s*)?([\d\.,]+)$/i);
+            if (!priceMatch) continue;
+            
+            const unitPrice = this.parseCurrency(priceMatch[1]);
+            const total = this.parseCurrency(priceMatch[2]);
+            if (unitPrice === 0 || total === 0) continue;
+            
+            let rest = cleanLine.substring(0, priceMatch.index).trim();
+            const tokens = rest.split(' ');
+            
+            let code = '-';
+            if (tokens.length > 0 && /^\d+$/.test(tokens[0])) {
+               code = tokens.shift();
+            }
+            if (tokens.length > 0 && /^\d+$/.test(tokens[0])) {
+               code = tokens.shift(); // O primeiro era índice, este é o código real
+            }
+
+            let calculatedQty = Math.round(total / unitPrice);
+            let qty = (calculatedQty > 0 && calculatedQty < 100000) ? calculatedQty : 1;
+            
+            const cleanTokens = tokens.filter(t => {
+               if (/^\d{7,14}$/.test(t)) return false; // Remove EAN
+               if (/^(CX|UN|KG|PCT|FD|DZ)(-\d+)?$/i.test(t)) return false; // Remove Unidades
+               if (t === String(qty)) return false; // Remove a Qtd solta
+               return true;
+            });
+            
+            let desc = cleanTokens.join(' ').trim();
+            if (desc.length === 0) desc = "Item sem descrição";
+            
+            items.push({ code, desc, qty, unitPrice, total });
+        }
+        
+        if (totalValue === 0 && items.length > 0) {
+            totalValue = items.reduce((acc, it) => acc + it.total, 0);
+        }
+
+        return {
+           id: 'pdf_' + Date.now(),
+           orderNumber,
+           date: dateStr,
+           totalValue,
+           items
+        };
+      },
+
+      renderDashboard(client) {
+         const dashboard = document.getElementById('intelligence-dashboard');
+         const list = document.getElementById('intelligence-history-list');
+         
+         if (!client.purchaseHistory || client.purchaseHistory.length === 0) {
+            dashboard.style.display = 'none';
+            return;
+         }
+         
+         dashboard.style.display = 'block';
+         
+         const history = [...client.purchaseHistory].sort((a,b) => new Date(b.date) - new Date(a.date));
+         
+         let totalSpent = 0;
+         const productCounts = {};
+         
+         list.innerHTML = history.map(h => {
+             totalSpent += h.totalValue;
+             
+             return `<div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-left: 3px solid var(--accent-amber); border-radius: 4px; padding: 0.75rem;">
+                 <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="font-weight: 700; color: var(--text-main);"><i class="fa-solid fa-receipt"></i> Pedido nº ${h.orderNumber || '?'}</div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <div style="color: var(--accent-green); font-weight: 800; margin-right: 0.25rem;">${formatCurrency(h.totalValue)}</div>
+                        <button type="button" class="btn btn-secondary btn-icon-only" title="Ver Itens do Pedido" onclick="IntelligenceApp.viewPurchaseItems('${client.id}', '${h.id}')" style="padding: 2px 6px; font-size: 0.8rem; border: none; color: var(--accent-blue); background: transparent;">
+                           <i class="fa-solid fa-eye"></i>
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-icon-only" title="Excluir do Histórico" onclick="IntelligenceApp.deletePurchaseHistory('${client.id}', '${h.id}')" style="padding: 2px 6px; font-size: 0.8rem; border: none; color: var(--accent-red); background: transparent;">
+                           <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                 </div>
+                 <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">
+                    <i class="fa-regular fa-calendar"></i> Realizado em: ${formatDate(h.date, true)}
+                 </div>
+             </div>`;
+         }).join('');
+      },
+      
+      viewPurchaseItems(clientId, purchaseId) {
+          const c = ClientApp.getById(clientId);
+          if (!c || !c.purchaseHistory) return;
+          const purchase = c.purchaseHistory.find(p => p.id === purchaseId);
+          if (!purchase) return;
+          
+          document.getElementById('purchase-items-modal-title').innerHTML = `<i class="fa-solid fa-box-open" style="color: var(--accent-blue);"></i> Itens do Pedido nº ${purchase.orderNumber || '?'}`;
+          document.getElementById('purchase-items-total').innerText = 'Total: ' + formatCurrency(purchase.totalValue);
+          
+          const tbody = document.getElementById('purchase-items-list-body');
+          if (!purchase.items || purchase.items.length === 0) {
+              tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 1rem; color: var(--text-muted);">Nenhum item foi extraído deste pedido (ou foi lido antes da correção do leitor). Exclua e refaça o upload do PDF.</td></tr>`;
+          } else {
+              tbody.innerHTML = purchase.items.map(it => `
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                  <td style="padding: 8px; color: var(--text-muted);">${escapeHtml(it.code)}</td>
+                  <td style="text-align: center; padding: 8px; color: var(--accent-blue); font-weight: 700;">${it.qty}</td>
+                  <td style="padding: 8px; color: var(--text-main);">${escapeHtml(it.desc)}</td>
+                  <td style="text-align: right; padding: 8px; color: var(--text-muted);">R$ ${it.unitPrice.toFixed(2)}</td>
+                  <td style="text-align: right; padding: 8px; color: var(--accent-green); font-weight: 600;">R$ ${it.total.toFixed(2)}</td>
+                </tr>
+              `).join('');
+          }
+          
+          ModalEngine.open('view-purchase-items-modal');
+      },
+      
+      deletePurchaseHistory(clientId, purchaseId) {
+          if (!confirm("Tem certeza que deseja excluir este pedido do histórico de inteligência?")) return;
+          const c = ClientApp.getById(clientId);
+          if (!c || !c.purchaseHistory) return;
+          c.purchaseHistory = c.purchaseHistory.filter(p => p.id !== purchaseId);
+          FirebaseEngine.syncClient(c);
+          showToast('Pedido removido do histórico de compras.', 'success');
+          this.renderDashboard(c);
+      }
+    };
 
     // Auto atualização ao voltar para a aba
     document.addEventListener('visibilitychange', () => {

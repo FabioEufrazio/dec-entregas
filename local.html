@@ -1598,6 +1598,28 @@
   <!-- ==========================================================================
        MODAL 4: GESTÃO DE CLIENTES (CRM, BUSCA CNPJ & BACKUP)
        ========================================================================== -->
+  <!-- ==========================================================================
+       MODAL TAREFA DETALHES
+       ========================================================================== -->
+  <div class="modal-overlay" id="task-details-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2><i class="fa-solid fa-circle-info" style="color: #38bdf8;"></i> Detalhes da Tarefa</h2>
+        <div style="display: flex; gap: 8px;">
+          <button id="task-details-edit-btn" class="btn btn-secondary btn-icon-only" style="color: #a855f7; border: 1px solid #475569;" title="Editar">
+            <i class="fa-solid fa-pen"></i>
+          </button>
+          <button class="btn btn-secondary btn-icon-only" onclick="ModalEngine.close('task-details-modal')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div id="task-details-content" style="background: #1e293b; border: 1px solid #334155; padding: 15px; border-radius: 8px; font-size: 0.95rem; line-height: 1.5; color: #f8fafc; text-align: left;">
+          <!-- renderizado via JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="clients-modal">
     <div class="modal-card modal-lg">
       <div class="modal-header">
@@ -5097,7 +5119,58 @@
           ModalEngine.open('edit-task-modal');
         },
 
-        editTask(id) {
+        viewTaskDetails(id) {
+        const task = this.tasks.find(t => String(t.id) === String(id));
+        if (!task) return;
+        
+        let clientHtml = '';
+        if (task.clientId) {
+          const client = ClientApp.getById(task.clientId);
+          if (client) {
+            clientHtml = `
+              <div style="margin-bottom: 12px;">
+                <span style="color: #94a3b8; font-size: 0.85rem; display: block; margin-bottom: 2px;">Cliente:</span>
+                <span style="color: #38bdf8; font-weight: 600;"><i class="fa-solid fa-user"></i> ${client.nomeFantasia}</span>
+              </div>
+            `;
+          }
+        }
+
+        let dateObj = new Date(task.date + 'T12:00:00');
+        let displayDate = dateObj.toLocaleDateString('pt-BR');
+
+        const content = document.getElementById('task-details-content');
+        if (content) {
+          content.innerHTML = `
+            <div style="margin-bottom: 15px;">
+              <span style="color: #94a3b8; font-size: 0.85rem; display: block; margin-bottom: 4px;">Descrição:</span>
+              <strong style="font-size: 1.1rem;">${task.description || ''}</strong>
+            </div>
+            ${clientHtml}
+            <div style="margin-bottom: 12px;">
+              <span style="color: #94a3b8; font-size: 0.85rem; display: block; margin-bottom: 2px;">Data Agendada:</span>
+              <span><i class="fa-regular fa-calendar" style="color: #3b82f6;"></i> ${displayDate}</span>
+            </div>
+            ${task.observation ? `
+            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #334155;">
+              <span style="color: #94a3b8; font-size: 0.85rem; display: block; margin-bottom: 4px;">Observações:</span>
+              <div style="white-space: pre-wrap;">${task.observation}</div>
+            </div>` : ''}
+          `;
+        }
+
+        const editBtn = document.getElementById('task-details-edit-btn');
+        if (editBtn) {
+          editBtn.onclick = () => {
+            ModalEngine.close('task-details-modal');
+            TaskApp.editTask(id);
+          };
+        }
+
+        ModalEngine.open('task-details-modal');
+      },
+
+      editTask(id) {
         const task = this.tasks.find(t => String(t.id) === String(id));
         if (!task) return;
         
@@ -5294,7 +5367,7 @@
           if (t.clientId) {
             const client = ClientApp.getById(t.clientId);
             if (client) {
-              clientHtml = `<div style="font-size: 0.8rem; color: #cbd5e1; margin-top: 4px;"><i class="fa-solid fa-user" style="color: #64748b; margin-right: 4px;"></i> <span onclick="ClientApp.viewOrdersHistory('${t.clientId}')" style="cursor: pointer; color: #38bdf8; text-decoration: underline;" title="Ver histórico do cliente">${client.nomeFantasia}</span> ${client.locationUrl ? `<a href="${client.locationUrl}" target="_blank" style="color: #ef4444; margin-left: 5px;"><i class="fa-solid fa-location-dot"></i></a>` : ''}</div>`;
+              clientHtml = `<div style="font-size: 0.8rem; color: #cbd5e1; margin-top: 4px;"><i class="fa-solid fa-user" style="color: #64748b; margin-right: 4px;"></i> <span onclick="event.stopPropagation(); ClientApp.viewOrdersHistory('${t.clientId}')" style="cursor: pointer; color: #38bdf8; text-decoration: underline;" title="Ver histórico do cliente">${client.nomeFantasia}</span> ${client.locationUrl ? `<a href="${client.locationUrl}" target="_blank" style="color: #ef4444; margin-left: 5px;"><i class="fa-solid fa-location-dot"></i></a>` : ''}</div>`;
             }
           }
           
@@ -5303,9 +5376,9 @@
           let isOverdue = new Date(t.date).getTime() < todayTime && t.date !== todayStr;
           
           return `
-            <div data-id="${t.id}" style="background: #2a364f; border: 1px solid #3b4b6b; border-radius: 8px; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3);  ${isOverdue ? 'border-left: 5px solid #ef4444;' : 'border-left: 5px solid #3b82f6;'}">
+            <div data-id="${t.id}" style="background: #2a364f; border: 1px solid #3b4b6b; border-radius: 8px; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; ${isOverdue ? 'border-left: 5px solid #ef4444;' : 'border-left: 5px solid #3b82f6;'}" onclick="TaskApp.viewTaskDetails('${t.id}')">
               <div style="display: flex; align-items: center; gap: 15px; flex: 1;">
-                <input type="checkbox" style="width: 20px; height: 20px; cursor: pointer; accent-color: #3b82f6; -webkit-appearance: auto; appearance: auto; ${t.completed ? 'display: none;' : ''}" onchange="TaskApp.toggleComplete('${t.id}')" ${t.completed ? 'checked' : ''}>
+                <input type="checkbox" style="width: 20px; height: 20px; cursor: pointer; accent-color: #3b82f6; -webkit-appearance: auto; appearance: auto; ${t.completed ? 'display: none;' : ''}" onclick="event.stopPropagation()" onchange="TaskApp.toggleComplete('${t.id}')" ${t.completed ? 'checked' : ''}>
                 <div>
                   <div style="font-weight: 600; color: #f8fafc; ${t.completed ? 'text-decoration: line-through; color: #94a3b8;' : ''}">${t.description}</div>
                   ${clientHtml}
@@ -5315,13 +5388,11 @@
                 </div>
               </div>
               <div style="display: flex; gap: 5px;">
-                ${t.completed ? `<button class="btn btn-secondary btn-icon-only" style="color: #f59e0b; border: none; background: transparent; box-shadow: none;" onclick="TaskApp.toggleComplete('${t.id}')" title="Reabrir Tarefa">
+                ${t.completed ? `<button class="btn btn-secondary btn-icon-only" style="color: #f59e0b; border: none; background: transparent; box-shadow: none;" onclick="event.stopPropagation(); TaskApp.toggleComplete('${t.id}')" title="Reabrir Tarefa">
                     <i class="fa-solid fa-rotate-left"></i>
                   </button>` : ''}
-                  <button class="btn btn-secondary btn-icon-only" style="color: #3b82f6; border: none; background: transparent; box-shadow: none;" onclick="TaskApp.editTask('${t.id}')" title="Editar">
-                  <i class="fa-solid fa-pen"></i>
-                </button>
-                <button class="btn btn-secondary btn-icon-only" style="color: #ef4444; border: none; background: transparent; box-shadow: none;" onclick="TaskApp.deleteTask('${t.id}')" title="Excluir">
+                  
+                <button class="btn btn-secondary btn-icon-only" style="color: #ef4444; border: none; background: transparent; box-shadow: none;" onclick="event.stopPropagation(); TaskApp.deleteTask('${t.id}')" title="Excluir">
                   <i class="fa-regular fa-trash-can"></i>
                 </button>
               </div>
